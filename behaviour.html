@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinLens — Behaviour Analysis</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e8c97e;
+      --gold-dim: rgba(201, 168, 76, 0.12);
+      --slate: #ffffff;
+      --slate-mid: #f9fafb;
+      --slate-light: #e5e7eb;
+      --success: #16a34a;
+      --warn: #ea580c;
+      --error: #dc2626;
+      --info: #2563eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-gold: rgba(201, 168, 76, 0.35);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%),
+        radial-gradient(circle at 90% 85%, #d1fae5 0%, transparent 45%),
+        radial-gradient(circle at 60% 40%, #e0f2fe 0%, transparent 35%),
+        #f3f4f6;
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* NAV */
+    .floating-nav {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .floating-nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+      transition: all 0.22s;
+    }
+
+    .floating-nav a:hover,
+    .floating-nav a.active {
+      background: linear-gradient(135deg, #eef2ff, #fff);
+      border-color: var(--border-gold);
+      color: var(--gold);
+      transform: translateX(-5px);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.18);
+    }
+
+    .floating-nav a svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    .floating-nav a:hover svg,
+    .floating-nav a.active svg {
+      opacity: 1;
+    }
+
+    /* LAYOUT */
+    .app {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 36px 90px 60px 36px;
+    }
+
+    header {
+      margin-bottom: 28px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 10px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--gold);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .logo-name {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 1.2;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    header p {
+      margin-top: 5px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .btn-outline-sm {
+      padding: 7px 14px;
+      border-radius: 7px;
+      border: 1px solid var(--border-gold);
+      background: transparent;
+      color: var(--gold);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-outline-sm:hover {
+      background: var(--gold-dim);
+    }
+
+    /* PANEL */
+    .panel {
+      background: var(--slate);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--panel-glow, rgba(201, 168, 76, 0.05)) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .panel:hover {
+      border-color: rgba(201, 168, 76, 0.16);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 19px;
+      font-weight: 400;
+    }
+
+    .panel-title em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .panel-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+
+    /* SCORE HERO */
+    .score-hero-inner {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .score-hero-text h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 34px;
+      font-weight: 300;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+
+    .score-hero-text h2 em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .score-hero-text p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      max-width: 480px;
+    }
+
+    .score-big-wrap {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      flex-shrink: 0;
+    }
+
+    .score-big-svg {
+      width: 150px;
+      height: 150px;
+    }
+
+    .score-big-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .score-big-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 44px;
+      font-weight: 600;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .score-big-lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .grade-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      margin-top: 7px;
+    }
+
+    /* KPI STRIP */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .kpi-card {
+      background: var(--slate-mid);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .kpi-card:hover {
+      border-color: var(--border-gold);
+    }
+
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--kg, rgba(201, 168, 76, 0.08)) 0%, transparent 70%);
+    }
+
+    .kpi-card:nth-child(2) {
+      --kg: rgba(45, 212, 160, 0.08);
+    }
+
+    .kpi-card:nth-child(3) {
+      --kg: rgba(248, 113, 113, 0.08);
+    }
+
+    .kpi-card:nth-child(4) {
+      --kg: rgba(96, 165, 250, 0.08);
+    }
+
+    .kpi-icon {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .kpi-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .kpi-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 25px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .kpi-note {
+      margin-top: 6px;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text-secondary);
+    }
+
+    .good {
+      color: var(--success);
+    }
+
+    .avg {
+      color: var(--warn);
+    }
+
+    .bad {
+      color: var(--error);
+    }
+
+    /* TWO COL */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+    }
+
+    /* TREND BARS */
+    .trend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .trend-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .trend-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .trend-name {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .trend-val {
+      font-family: 'DM Mono', monospace;
+      color: var(--text-secondary);
+      font-size: 11px;
+    }
+
+    .trend-bar-bg {
+      height: 7px;
+      background: var(--slate-light);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .trend-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    /* MONTH COMPARE */
+    .month-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 18px;
+    }
+
+    .month-col {
+      background: var(--slate-mid);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .month-col.current {
+      background: var(--gold-dim);
+    }
+
+    .month-name {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .month-score {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .month-col.current .month-score {
+      color: var(--gold);
+    }
+
+    .month-delta {
+      font-size: 9px;
+      font-family: 'DM Mono', monospace;
+      margin-top: 4px;
+    }
+
+    /* ETHICS */
+    .ethics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-bottom: 18px;
+    }
+
+    .ethics-item {
+      background: var(--slate-mid);
+      border-radius: 11px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ethics-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .et-label {
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .et-sub {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+
+    /* VIOLATIONS */
+    .violation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .violation-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 13px;
+      background: var(--slate-mid);
+      border-radius: 11px;
+      border-left: 3px solid transparent;
+    }
+
+    .violation-item.red-flag {
+      border-color: var(--error);
+    }
+
+    .violation-item.amber-flag {
+      border-color: var(--warn);
+    }
+
+    .violation-item.green-flag {
+      border-color: var(--success);
+    }
+
+    .viol-icon {
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .viol-title {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .viol-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .viol-badge {
+      margin-top: 5px;
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .badge-red {
+      background: rgba(248, 113, 113, 0.1);
+      color: var(--error);
+    }
+
+    .badge-amber {
+      background: rgba(251, 146, 60, 0.1);
+      color: var(--warn);
+    }
+
+    .badge-green {
+      background: rgba(45, 212, 160, 0.1);
+      color: var(--success);
+    }
+
+    /* TOP SPENDS TABLE */
+    .top-spend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .ts-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--slate-mid);
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .ts-rank {
+      font-family: 'DM Mono', monospace;
+      color: var(--text-secondary);
+      width: 18px;
+      flex-shrink: 0;
+    }
+
+    .ts-name {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .ts-cat {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .ts-amount {
+      font-family: 'DM Mono', monospace;
+      font-weight: 600;
+      color: var(--error);
+    }
+
+    /* MONTHLY CADENCE BAR CHART */
+    .cadence-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 80px;
+      padding-top: 8px;
+    }
+
+    .cadence-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cadence-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, var(--gold), rgba(201, 168, 76, 0.3));
+      transition: height 0.9s ease;
+      min-height: 2px;
+    }
+
+    .cadence-label {
+      font-size: 8px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* BOTTOM TWO COL */
+    .bottom-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    /* LOADING / ERROR */
+    .state-msg {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .state-msg .icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    /* ORBs */
+    .orb {
+      position: fixed;
+      pointer-events: none;
+      z-index: -1;
+      border-radius: 50%;
+      filter: blur(60px);
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      left: -100px;
+      background: radial-gradient(circle, rgba(201, 168, 76, 0.06) 0%, transparent 70%);
+    }
+
+    .orb-2 {
+      width: 340px;
+      height: 340px;
+      bottom: 0;
+      right: 60px;
+      background: radial-gradient(circle, rgba(45, 212, 160, 0.05) 0%, transparent 70%);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- NAV -->
+  <nav class="floating-nav">
+    <a href="dashboard.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>Dashboard</a>
+    <a href="transactions.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>Transactions</a>
+    <a href="behaviour.html" class="active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>Behaviour</a>
+    <a href="influence.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="4" r="2" />
+        <circle cx="12" cy="20" r="2" />
+        <circle cx="4" cy="12" r="2" />
+        <circle cx="20" cy="12" r="2" />
+        <path d="M12 6v4m0 4v4M6 12h4m4 0h4" />
+      </svg>Influence Map</a>
+    <a href="insights.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>Insights</a>
+    <a href="advisor.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>AI Advisor</a>
+    <a href="loan.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>Loan Sim</a>
+    <a href="reports.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>Reports</a>
+  </nav>
+
+  <div class="app">
+
+    <header>
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-mark">F</div>
+          <span class="logo-name">FinLens</span>
+        </div>
+        <h1>Behaviour <em>Analysis</em></h1>
+        <p id="header-sub">Loading financial behaviour data…</p>
+      </div>
+      <a href="reports.html" class="btn-outline-sm" style="margin-top:18px">View Full Report →</a>
+    </header>
+
+    <!-- SCORE HERO -->
+    <div class="panel" style="--panel-glow:rgba(201,168,76,0.07)">
+      <div class="score-hero-inner">
+        <div class="score-hero-text">
+          <p class="eyebrow">Overall Discipline Score</p>
+          <h2>Your financial <em>behaviour</em><br>at a glance</h2>
+          <p id="score-comment">Loading analysis…</p>
+        </div>
+        <div class="score-big-wrap">
+          <svg class="score-big-svg" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" stroke-width="3" />
+            <circle id="score-ring" cx="18" cy="18" r="15.9" fill="none" stroke="url(#scoreGrad)" stroke-width="3"
+              stroke-dasharray="0 100" stroke-dashoffset="25" transform="rotate(-90 18 18)" stroke-linecap="round" />
+            <defs>
+              <linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#c9a84c" />
+                <stop offset="100%" stop-color="#fb923c" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="score-big-center">
+            <div class="score-big-num" id="score-num">—</div>
+            <div class="score-big-lbl">/ 100</div>
+            <div class="grade-badge" id="score-grade">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORE BREAKDOWN -->
+    <div class="panel" id="breakdown-panel" style="--panel-glow:rgba(201,168,76,0.05);display:none">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Score <em>Breakdown</em></div>
+          <div class="panel-sub">Exact deductions applied to reach your score</div>
+        </div>
+      </div>
+      <div id="breakdown-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <!-- KPI STRIP -->
+    <div class="panel" style="--panel-glow:rgba(45,212,160,0.05)">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Behaviour <em>Indicators</em></div>
+          <div class="panel-sub">Key financial health signals from all transactions</div>
+        </div>
+      </div>
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-label">Savings Ratio</div>
+          <div class="kpi-value" id="kpi-save">—</div>
+          <div class="kpi-note" id="kpi-save-note">of total income</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-label">Discretionary Spend</div>
+          <div class="kpi-value" id="kpi-disc">—</div>
+          <div class="kpi-note" id="kpi-disc-note">Shopping, Travel, Entertainment, Food</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🚨</div>
+          <div class="kpi-label">Budget Violations</div>
+          <div class="kpi-value" id="kpi-viol">—</div>
+          <div class="kpi-note" id="kpi-viol-note">categories over limit</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-label">Active Months</div>
+          <div class="kpi-value" id="kpi-months">—</div>
+          <div class="kpi-note" id="kpi-months-note">months of tracked data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CATEGORY TRENDS + MONTH COMPARE -->
+    <div class="two-col">
+      <div class="panel" style="--panel-glow:rgba(96,165,250,0.04)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Category <em>Trends</em></div>
+            <div class="panel-sub">Total spend vs. budget across all time</div>
+          </div>
+        </div>
+        <div class="trend-list" id="cat-trends"></div>
+        <div class="month-compare" id="month-compare" style="margin-top:18px">
+          <!-- built by JS -->
+        </div>
+      </div>
+
+      <!-- ETHICS + VIOLATIONS -->
+      <div class="panel" style="--panel-glow:rgba(248,113,113,0.04)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Ethics &amp; <em>Violations</em></div>
+            <div class="panel-sub">Behavioural signals from real data</div>
+          </div>
+        </div>
+        <div class="ethics-grid" id="ethics-grid"></div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text-primary)">Budget Violations</div>
+        <div class="violation-list" id="violations"></div>
+      </div>
+    </div>
+
+    <!-- TOP TRANSACTIONS + MONTHLY CADENCE -->
+    <div class="bottom-two">
+      <div class="panel" style="--panel-glow:rgba(201,168,76,0.05)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Top <em>Expenditures</em></div>
+            <div class="panel-sub">Highest single-transaction expenses</div>
+          </div>
+          <a href="transactions.html" class="btn-outline-sm">View All →</a>
+        </div>
+        <div class="top-spend-list" id="top-spends"></div>
+      </div>
+
+      <div class="panel" style="--panel-glow:rgba(96,165,250,0.04)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Monthly <em>Spend Cadence</em></div>
+            <div class="panel-sub">Total expense per month</div>
+          </div>
+        </div>
+        <div class="cadence-chart" id="cadence-chart"></div>
+        <div style="margin-top:12px;font-size:11px;color:var(--text-secondary);font-family:'DM Mono',monospace"
+          id="cadence-summary"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ─── CONFIG ────────────────────────────────────────────────
+    const API = 'http://localhost:5001/api/transactions';
+
+    const BUDGETS = {
+      'Food & Dining': 12000,
+      'Shopping': 8000,
+      'Travel': 10000,
+      'Utilities': 4000,
+      'Entertainment': 3000,
+      'Healthcare': 5000,
+      'Education': 6000,
+      'Other': 4000,
+      'Freelance': 0,
+      'Salary': 0
+    };
+
+    const DISC_CATS = new Set(['Shopping', 'Travel', 'Entertainment', 'Food & Dining']);
+    const MONTH_NAMES = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+    // ─── HELPERS ───────────────────────────────────────────────
+    const fmt = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+
+    function scoreColor(s) {
+      if (s >= 80) return 'var(--success)';
+      if (s >= 60) return 'var(--warn)';
+      return 'var(--error)';
+    }
+
+    // numMonths = number of distinct months in the dataset (for monthly avg comparison)
+    function computeScore(txs, numMonths) {
+      const months = numMonths || 1;
+      let inc = 0, exp = 0, disc = 0;
+      const catSpend = {};
+      txs.forEach(tx => {
+        if (tx.type === 'income') { inc += tx.amount; }
+        else {
+          exp += tx.amount;
+          if (DISC_CATS.has(tx.cat)) disc += tx.amount;
+          catSpend[tx.cat] = (catSpend[tx.cat] || 0) + tx.amount;
+        }
+      });
+      const saveRatio = inc > 0 ? ((inc - exp) / inc) * 100 : 0;
+      const discRatio = exp > 0 ? (disc / exp) * 100 : 0;
+      let score = 100;
+      const breakdown = [];
+
+      // Budget violations — compare MONTHLY AVERAGE vs monthly budget
+      const violatingCats = [];
+      Object.entries(catSpend).forEach(([cat, totalSpent]) => {
+        const budget = BUDGETS[cat];
+        if (!budget) return; // skip income categories
+        const monthlyAvg = totalSpent / months;
+        if (monthlyAvg > budget) {
+          score -= 8;
+          violatingCats.push(cat);
+          breakdown.push({ label: `${cat} avg over budget`, deduct: -8, detail: `Avg ${fmt(monthlyAvg)}/mo > limit ${fmt(budget)}/mo` });
+        }
+      });
+
+      // Savings penalties / bonus
+      if (saveRatio < 0) {
+        score -= 25;
+        breakdown.push({ label: 'Negative savings (spending > income)', deduct: -25, detail: `${saveRatio.toFixed(1)}% savings rate` });
+      } else if (saveRatio < 10) {
+        score -= 20;
+        breakdown.push({ label: 'Very low savings rate', deduct: -20, detail: `${saveRatio.toFixed(1)}% < 10% target` });
+      } else if (saveRatio < 20) {
+        score -= 10;
+        breakdown.push({ label: 'Low savings rate', deduct: -10, detail: `${saveRatio.toFixed(1)}% < 20% target` });
+      } else if (saveRatio > 50) {
+        score += 15;
+        breakdown.push({ label: 'Outstanding savings rate bonus', deduct: +15, detail: `${saveRatio.toFixed(1)}% > 50%` });
+      } else if (saveRatio > 30) {
+        score += 10;
+        breakdown.push({ label: 'Great savings rate bonus', deduct: +10, detail: `${saveRatio.toFixed(1)}% > 30%` });
+      } else if (saveRatio > 20) {
+        score += 5;
+        breakdown.push({ label: 'Good savings rate bonus', deduct: +5, detail: `${saveRatio.toFixed(1)}% > 20%` });
+      } else {
+        breakdown.push({ label: 'Savings rate — OK', deduct: 0, detail: `${saveRatio.toFixed(1)}%` });
+      }
+
+      // Discretionary penalties
+      if (discRatio > 70) {
+        score -= 10;
+        breakdown.push({ label: 'Very high discretionary spend', deduct: -10, detail: `${discRatio.toFixed(1)}% of expenses` });
+      } else if (discRatio > 50) {
+        score -= 15;
+        breakdown.push({ label: 'High discretionary spend', deduct: -15, detail: `${discRatio.toFixed(1)}% of expenses` });
+      } else {
+        breakdown.push({ label: 'Discretionary spend — OK', deduct: 0, detail: `${discRatio.toFixed(1)}% of expenses` });
+      }
+
+      if (inc === 0 && exp === 0) score = 0;
+      return { score: Math.min(Math.max(score, 0), 100), saveRatio, discRatio, catSpend, inc, exp, disc, breakdown, violatingCats };
+    }
+
+    // ─── MAIN ──────────────────────────────────────────────────
+    async function init() {
+      let txs;
+      try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        txs = await res.json();
+      } catch (e) {
+        document.getElementById('score-comment').textContent =
+          '⚠ Cannot reach backend. Make sure server is running on port 5001.';
+        return;
+      }
+
+      if (!txs || txs.length === 0) {
+        document.getElementById('score-comment').textContent = 'No transactions found. Add data first.';
+        return;
+      }
+
+      // ── Group by month key  "YYYY-M" ──────────────────────────
+      const byMonth = {};
+      txs.forEach(tx => {
+        const d = new Date(tx.date);
+        if (isNaN(d)) return;
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        (byMonth[key] = byMonth[key] || []).push(tx);
+      });
+
+      const sortedMonthKeys = Object.keys(byMonth).sort((a, b) => {
+        const [ay, am] = a.split('-').map(Number);
+        const [by2, bm] = b.split('-').map(Number);
+        return ay !== by2 ? ay - by2 : am - bm;
+      });
+
+      // ── Overall stats ──────────────────────────────────────────
+      const numMonths = sortedMonthKeys.length;
+      const { score, saveRatio, discRatio, catSpend, inc, exp, breakdown, violatingCats } = computeScore(txs, numMonths);
+
+      // Violations — using monthly average
+      const viols = [];
+      Object.entries(catSpend).forEach(([cat, totalSpent]) => {
+        const budget = BUDGETS[cat];
+        if (!budget) return;
+        const monthlyAvg = totalSpent / numMonths;
+        if (monthlyAvg > budget) viols.push({ cat, monthlyAvg, budget, diff: monthlyAvg - budget, totalSpent });
+      });
+      viols.sort((a, b) => b.diff - a.diff);
+
+      // ── Update header ──────────────────────────────────────────
+      const latestKey = sortedMonthKeys[sortedMonthKeys.length - 1];
+      const [latY, latM] = latestKey.split('-').map(Number);
+      document.getElementById('header-sub').textContent =
+        `Ethical and behavioural indicators · ${MONTH_NAMES[latM]} ${latY} · ${txs.length} transactions`;
+
+      // ── Score ring ─────────────────────────────────────────────
+      const rounded = Math.round(score);
+      document.getElementById('score-num').textContent = rounded;
+
+      let grade = 'A', gradeColor = 'rgba(22,163,74,0.15)', gradeText = 'var(--success)';
+      let comment = 'Excellent financial behaviour — you display outstanding discipline.';
+      if (score < 80) { grade = 'B'; gradeColor = 'rgba(251,146,60,0.15)'; gradeText = 'var(--warn)'; comment = 'Good behaviour with room for improvement.'; }
+      if (score < 60) { grade = 'C'; gradeColor = 'rgba(234,88,12,0.15)'; gradeText = 'var(--warn)'; comment = 'Warning — budgets are stretched. Take action now.'; }
+      if (score < 40) { grade = 'D'; gradeColor = 'rgba(220,38,38,0.15)'; gradeText = 'var(--error)'; comment = 'Poor financial discipline — high penalty on spending.'; }
+
+      const gradeBadge = document.getElementById('score-grade');
+      gradeBadge.textContent = 'Grade ' + grade;
+      gradeBadge.style.background = gradeColor;
+      gradeBadge.style.color = gradeText;
+      gradeBadge.style.border = `1px solid ${gradeText}`;
+
+      document.getElementById('score-ring').setAttribute('stroke-dasharray', `${(score / 100) * 100} 100`);
+
+      document.getElementById('score-comment').innerHTML =
+        `Computed from <strong>${numMonths} months</strong> of data using monthly averages. Savings rate <strong>${saveRatio.toFixed(1)}%</strong>, discretionary spend <strong>${discRatio.toFixed(1)}%</strong>. Score: <strong style="color:var(--gold)">${rounded}/100</strong> — <strong style="color:${gradeText}">${comment}</strong>`;
+
+      // ── Score Breakdown panel ──────────────────────────────────
+      const bpanel = document.getElementById('breakdown-panel');
+      bpanel.style.display = '';
+      const startScore = 100;
+      let running = 100;
+      document.getElementById('breakdown-list').innerHTML = [
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--slate-mid);border-radius:10px;font-size:12px">
+          <span style="font-weight:600">Starting Score</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600">100 pts</span>
+        </div>`,
+        ...breakdown.map(b => {
+          running += b.deduct;
+          const col = b.deduct > 0 ? 'var(--success)' : b.deduct < 0 ? 'var(--error)' : 'var(--text-secondary)';
+          const sign = b.deduct > 0 ? '+' : '';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--slate-mid);border-radius:10px;font-size:12px;border-left:3px solid ${col}">
+            <div>
+              <div style="font-weight:500">${b.label}</div>
+              <div style="font-size:10px;color:var(--text-secondary);font-family:'DM Mono',monospace;margin-top:2px">${b.detail}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;margin-left:16px">
+              <div style="font-family:'DM Mono',monospace;font-weight:700;color:${col}">${sign}${b.deduct} pts</div>
+              <div style="font-size:10px;color:var(--text-secondary);font-family:'DM Mono',monospace">→ ${Math.min(Math.max(running, 0), 100)} pts</div>
+            </div>
+          </div>`;
+        }),
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--gold-dim);border-radius:10px;border:1px solid var(--border-gold);font-size:13px">
+          <span style="font-weight:600">Final Score</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:700;color:var(--gold);font-size:16px">${rounded} / 100</span>
+        </div>`
+      ].join('');
+
+      // ── KPI strip ──────────────────────────────────────────────
+      const saveEl = document.getElementById('kpi-save');
+      saveEl.textContent = saveRatio.toFixed(1) + '%';
+      saveEl.className = 'kpi-value ' + (saveRatio >= 20 ? 'good' : saveRatio >= 5 ? 'avg' : 'bad');
+      document.getElementById('kpi-save-note').textContent = `Saved ${fmt(inc - exp)} of ${fmt(inc)} income`;
+
+      const discEl = document.getElementById('kpi-disc');
+      discEl.textContent = discRatio.toFixed(1) + '%';
+      discEl.className = 'kpi-value ' + (discRatio <= 40 ? 'good' : discRatio <= 60 ? 'avg' : 'bad');
+      document.getElementById('kpi-disc-note').textContent = `${fmt(txs.filter(t => t.type !== 'income' && DISC_CATS.has(t.cat)).reduce((s, t) => s + t.amount, 0))} of ${fmt(exp)} expenses`;
+
+      const violEl = document.getElementById('kpi-viol');
+      violEl.textContent = viols.length;
+      violEl.className = 'kpi-value ' + (viols.length === 0 ? 'good' : viols.length <= 2 ? 'avg' : 'bad');
+      document.getElementById('kpi-viol-note').textContent = viols.length === 0 ? 'All within budget ✓' : viols.map(v => v.cat).join(', ');
+
+      document.getElementById('kpi-months').textContent = sortedMonthKeys.length;
+      document.getElementById('kpi-months-note').textContent = `${txs.length} total transactions`;
+
+      // ── Category trends (monthly avg vs budget) ───────────────
+      const catEntries = Object.entries(catSpend).sort((a, b) => b[1] - a[1]);
+      const trendsHtml = catEntries.map(([cat, totalSpent]) => {
+        const budget = BUDGETS[cat] || 0;
+        if (budget === 0) return ''; // skip income cats
+        const monthlyAvg = totalSpent / numMonths;
+        const pct = Math.min((monthlyAvg / budget) * 100, 100);
+        const color = pct >= 100 ? 'var(--error)' : pct >= 85 ? 'var(--warn)' : 'var(--success)';
+        return `
+          <div class="trend-item">
+            <div class="trend-header">
+              <span class="trend-name">${cat}</span>
+              <span class="trend-val">avg ${fmt(monthlyAvg)}/mo &nbsp;·&nbsp; limit ${fmt(budget)}/mo</span>
+            </div>
+            <div class="trend-bar-bg">
+              <div class="trend-bar-fill" style="width:${pct}%;background:${color}"></div>
+            </div>
+          </div>`;
+      }).filter(Boolean).join('');
+      document.getElementById('cat-trends').innerHTML = trendsHtml || '<p style="font-size:12px;color:var(--text-secondary)">No expense data.</p>';
+
+      // ── Month comparison (last 3) ──────────────────────────────
+      const last3Keys = sortedMonthKeys.slice(-3);
+      let monthHtml = '';
+      last3Keys.forEach((key, i) => {
+        const [yr, mo] = key.split('-').map(Number);
+        const ms = Math.round(computeScore(byMonth[key]).score);
+        const isCurrent = i === last3Keys.length - 1;
+        const prevKey = i > 0 ? last3Keys[i - 1] : null;
+        let delta = '';
+        if (prevKey) {
+          const prevScore = Math.round(computeScore(byMonth[prevKey]).score);
+          const diff = ms - prevScore;
+          delta = `<div class="month-delta" style="color:${diff >= 0 ? 'var(--success)' : 'var(--error)'}">${diff >= 0 ? '▲' : '▼'} ${Math.abs(diff)} pts</div>`;
+        }
+        monthHtml += `
+          <div class="month-col${isCurrent ? ' current' : ''}">
+            <div class="month-name">${MONTH_NAMES[mo]} ${yr}</div>
+            <div class="month-score" style="color:${isCurrent ? 'var(--gold)' : scoreColor(ms)}">${ms}</div>
+            ${delta}
+          </div>`;
+      });
+      // Pad if fewer than 3 months
+      while (last3Keys.length + (monthHtml.match(/month-col/g) || []).length < 3) {
+        monthHtml = '<div class="month-col"><div class="month-name">—</div><div class="month-score" style="color:var(--text-secondary)">N/A</div></div>' + monthHtml;
+      }
+      document.getElementById('month-compare').innerHTML = monthHtml;
+
+      // ── Ethics grid ────────────────────────────────────────────
+      const signals = [];
+
+      signals.push(saveRatio >= 20
+        ? { col: 'var(--success)', label: 'Healthy Savings Rate', sub: `${saveRatio.toFixed(1)}% of income saved` }
+        : saveRatio >= 5
+          ? { col: 'var(--warn)', label: 'Low Savings Rate', sub: `Only ${saveRatio.toFixed(1)}% saved` }
+          : { col: 'var(--error)', label: 'Critical: Negligible Savings', sub: `${saveRatio.toFixed(1)}% — action needed` });
+
+      signals.push(discRatio <= 40
+        ? { col: 'var(--success)', label: 'Controlled Discretionary', sub: `${discRatio.toFixed(1)}% of expenses` }
+        : discRatio <= 60
+          ? { col: 'var(--warn)', label: 'High Discretionary Spend', sub: `${discRatio.toFixed(1)}% on non-essentials` }
+          : { col: 'var(--error)', label: 'Excessive Lifestyle Spend', sub: `${discRatio.toFixed(1)}% — lifestyle inflation` });
+
+      signals.push(viols.length === 0
+        ? { col: 'var(--success)', label: 'No Budget Violations', sub: 'Monthly avg spend within all limits' }
+        : { col: 'var(--error)', label: `${viols.length} Budget Violation${viols.length > 1 ? 's' : ''}`, sub: `${viols[0].cat} avg +${fmt(viols[0].diff)}/mo over` });
+
+      signals.push(sortedMonthKeys.length >= 6
+        ? { col: 'var(--success)', label: 'Strong Spending History', sub: `${sortedMonthKeys.length} months of data` }
+        : { col: 'var(--warn)', label: 'Limited History', sub: `${sortedMonthKeys.length} month(s) tracked` });
+
+      document.getElementById('ethics-grid').innerHTML = signals.map(s => `
+        <div class="ethics-item">
+          <div class="ethics-dot" style="background:${s.col}"></div>
+          <div><div class="et-label">${s.label}</div><div class="et-sub">${s.sub}</div></div>
+        </div>`).join('');
+
+      // ── Violations list (monthly avg) ──────────────────────────
+      let violHtml = '';
+      if (viols.length === 0) {
+        violHtml = '<div class="violation-item green-flag"><span class="viol-icon">✅</span><div><div class="viol-title">No violations detected</div><div class="viol-sub">Monthly average spend in all categories is within budget.</div></div></div>';
+      } else {
+        viols.forEach(v => {
+          const pct = Math.round((v.monthlyAvg / v.budget) * 100);
+          violHtml += `
+            <div class="violation-item red-flag">
+              <span class="viol-icon">🔴</span>
+              <div>
+                <div class="viol-title">${v.cat} — avg ${pct}% of monthly budget</div>
+                <div class="viol-sub">Monthly avg: ${fmt(v.monthlyAvg)} vs. limit: ${fmt(v.budget)}</div>
+                <span class="viol-badge badge-red">+${fmt(v.diff)}/mo over budget</span>
+              </div>
+            </div>`;
+        });
+      }
+      document.getElementById('violations').innerHTML = violHtml;
+
+      // ── Top 8 expenses ─────────────────────────────────────────
+      const expenses = txs.filter(t => t.type !== 'income').sort((a, b) => b.amount - a.amount).slice(0, 8);
+      const emojiMap = { 'Food & Dining': '🍽️', 'Shopping': '🛍️', 'Travel': '✈️', 'Utilities': '⚡', 'Entertainment': '🎬', 'Healthcare': '🏥', 'Education': '📚', 'Other': '📦' };
+      document.getElementById('top-spends').innerHTML = expenses.map((t, i) => `
+        <div class="ts-row">
+          <div class="ts-rank">#${i + 1}</div>
+          <div>${emojiMap[t.cat] || '💳'}</div>
+          <div class="ts-name">${t.desc}</div>
+          <div class="ts-cat">${t.cat}</div>
+          <div class="ts-amount">${fmt(t.amount)}</div>
+        </div>`).join('');
+
+      // ── Monthly cadence bar chart ──────────────────────────────
+      const monthlyExp = sortedMonthKeys.map(key => {
+        const [yr, mo] = key.split('-').map(Number);
+        const exp2 = byMonth[key].filter(t => t.type !== 'income').reduce((s, t) => s + t.amount, 0);
+        return { label: MONTH_NAMES[mo].substring(0, 3) + "'" + String(yr).slice(-2), exp: exp2 };
+      });
+
+      // Show last 12 months max
+      const cadenceData = monthlyExp.slice(-12);
+      const maxExp = Math.max(...cadenceData.map(m => m.exp));
+      const avgExp = cadenceData.reduce((s, m) => s + m.exp, 0) / cadenceData.length;
+
+      document.getElementById('cadence-chart').innerHTML = cadenceData.map(m => {
+        const pct = maxExp > 0 ? (m.exp / maxExp) * 72 : 2;
+        const isHigh = m.exp > avgExp * 1.2;
+        const barColor = isHigh
+          ? 'linear-gradient(180deg,var(--error),rgba(220,38,38,0.3))'
+          : 'linear-gradient(180deg,var(--gold),rgba(201,168,76,0.3))';
+        return `
+          <div class="cadence-bar-wrap">
+            <div class="cadence-bar" style="height:${Math.max(pct, 2)}px;background:${barColor}" title="${m.label}: ${fmt(m.exp)}"></div>
+            <div class="cadence-label">${m.label}</div>
+          </div>`;
+      }).join('');
+
+      const highMonths = cadenceData.filter(m => m.exp > avgExp * 1.2).length;
+      document.getElementById('cadence-summary').textContent =
+        `Avg monthly expense: ${fmt(avgExp)} · ${highMonths > 0 ? `${highMonths} high-spend month(s) detected (red bars)` : 'Spend is consistent across months ✓'}`;
+    }
+
+    init();
+    setInterval(init, 15000); // auto-refresh every 15s
+  </script>
+</body>
+
+</html>

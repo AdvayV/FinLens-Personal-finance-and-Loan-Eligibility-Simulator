@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinLens — Influence Map</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        :root {
+            --ink: #f3f4f6;
+            --gold: #c9a84c;
+            --gold-light: #e8c97e;
+            --gold-dim: rgba(201, 168, 76, 0.12);
+            --slate: #ffffff;
+            --slate-mid: #f9fafb;
+            --slate-light: #e5e7eb;
+            --success: #16a34a;
+            --warn: #ea580c;
+            --error: #dc2626;
+            --info: #2563eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border: rgba(15, 23, 42, 0.08);
+            --border-gold: rgba(201, 168, 76, 0.35);
+        }
+
+        /* Base Styles */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%),
+                radial-gradient(circle at 90% 85%, #d1fae5 0%, transparent 45%),
+                radial-gradient(circle at 60% 40%, #e0f2fe 0%, transparent 35%),
+                var(--ink);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Floating Navigation */
+        .floating-nav {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .floating-nav a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+            transition: all 0.22s;
+            letter-spacing: 0.01em;
+        }
+
+        .floating-nav a:hover,
+        .floating-nav a.active {
+            background: linear-gradient(135deg, #eef2ff, #ffffff);
+            border-color: var(--border-gold);
+            color: var(--gold);
+            transform: translateX(-5px);
+            box-shadow: 0 10px 28px rgba(99, 102, 241, 0.18);
+        }
+
+        .floating-nav a svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+            opacity: 0.5;
+        }
+
+        .floating-nav a:hover svg,
+        .floating-nav a.active svg {
+            opacity: 1;
+        }
+
+        /* Main Container */
+        .app {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 36px 80px 60px 36px;
+        }
+
+        header {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .header-left .logo {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin-bottom: 10px;
+        }
+
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            border: 1.5px solid var(--gold);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .logo-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 300;
+            line-height: 1.2;
+        }
+
+        header h1 em {
+            font-style: italic;
+            color: var(--gold-light);
+        }
+
+        header p {
+            margin-top: 5px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--slate);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 19px;
+            font-weight: 400;
+        }
+
+        .panel-title em {
+            font-style: italic;
+            color: var(--gold-light);
+        }
+
+        .panel-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            margin-top: 2px;
+        }
+
+        /* Map Layout */
+        .map-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        #influence-map-container {
+            width: 100%;
+            height: 500px;
+            background: var(--slate-mid);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            position: relative;
+            cursor: grab;
+        }
+
+        #influence-map-container:active {
+            cursor: grabbing;
+        }
+
+        .node circle {
+            stroke: #fff;
+            stroke-width: 1.5px;
+            transition: r 0.2s, filter 0.2s;
+        }
+
+        .node text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 10px;
+            pointer-events: none;
+            fill: var(--text-primary);
+        }
+
+        .link {
+            stroke-opacity: 0.3;
+            stroke-linecap: round;
+            transition: stroke-opacity 0.2s;
+        }
+
+        /* Insights Sidebar */
+        .insights-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .insight-card {
+            background: var(--slate-mid);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .insight-card:hover {
+            border-color: var(--gold-dim);
+        }
+
+        .insight-label {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .insight-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .insight-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .influence-score-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-family: 'DM Mono', monospace;
+            margin-top: 10px;
+        }
+
+        /* Correlations Table */
+        .correlation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .correlation-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px;
+            background: var(--slate-mid);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .corr-icon {
+            width: 38px;
+            height: 38px;
+            background: #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .corr-info {
+            flex: 1;
+        }
+
+        .corr-title {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .corr-factor {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            margin-top: 2px;
+        }
+
+        .corr-value {
+            text-align: right;
+        }
+
+        .corr-percent {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .corr-bar-wrap {
+            width: 100px;
+            height: 4px;
+            background: var(--slate-light);
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .corr-bar-fill {
+            height: 100%;
+            background: var(--gold);
+            border-radius: 2px;
+        }
+
+        /* Tooltip */
+        .d3-tooltip {
+            position: absolute;
+            visibility: hidden;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 11px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Orbs */
+        .orb {
+            position: fixed;
+            pointer-events: none;
+            z-index: -1;
+            border-radius: 50%;
+            filter: blur(60px);
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+            background: radial-gradient(circle, rgba(201, 168, 76, 0.06) 0%, transparent 70%);
+        }
+
+        .orb-2 {
+            width: 340px;
+            height: 340px;
+            bottom: 0;
+            right: 60px;
+            background: radial-gradient(circle, rgba(45, 212, 160, 0.05) 0%, transparent 70%);
+        }
+
+        /* Legend */
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            font-size: 10px;
+            font-family: 'DM Mono', monospace;
+        }
+
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .leg-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <!-- FLOATING NAV -->
+    <nav class="floating-nav">
+        <a href="dashboard.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            Dashboard
+        </a>
+        <a href="transactions.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+            Transactions
+        </a>
+        <a href="behaviour.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Behaviour
+        </a>
+        <a href="influence.html" class="active">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Influence Map
+        </a>
+        <a href="insights.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>Insights</a>
+        <a href="advisor.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            AI Advisor
+        </a>
+        <a href="loan.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            Loan Sim
+        </a>
+    </nav>
+
+    <div class="app">
+        <header>
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-mark">F</div>
+                    <span class="logo-name">FinLens</span>
+                </div>
+                <h1>Financial <em>Influence Map</em></h1>
+                <p>Behavioural economics analytics mapping social and regional context to spending.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-outline-sm" onclick="simulation.alpha(1).restart()">Recalibrate View</button>
+            </div>
+        </header>
+
+        <div class="map-grid">
+            <!-- Main Graph Panel -->
+            <div class="panel" style="padding: 0; --panel-glow: rgba(99, 102, 241, 0.05)">
+                <div id="influence-map-container">
+                    <div class="map-legend">
+                        <div class="leg-item">
+                            <div class="leg-dot" style="background:var(--gold)"></div> User Spending
+                        </div>
+                        <div class="leg-item">
+                            <div class="leg-dot" style="background:var(--info)"></div> External Factors
+                        </div>
+                        <div class="leg-item">
+                            <div class="leg-dot" style="background:var(--success)"></div> Social Benchmarks
+                        </div>
+                        <div class="leg-item">
+                            <div class="leg-dot" style="background:var(--warn)"></div> Macro Indicators
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Sidebar -->
+            <div class="insights-panel">
+                <div class="panel" id="node-details">
+                    <div class="panel-header" style="margin-bottom: 12px;">
+                        <div>
+                            <div class="panel-title">Influence <em>Insights</em></div>
+                            <div class="panel-sub">Select a node to explore connections</div>
+                        </div>
+                    </div>
+                    <div id="active-insight">
+                        <div class="insight-card">
+                            <div class="insight-label">Interactive System</div>
+                            <div class="insight-title">Discover Correlations</div>
+                            <div class="insight-desc">Drag nodes to explore relationship strengths and contextual
+                                weights affecting your budget.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header" style="margin-bottom: 15px;">
+                        <div>
+                            <div class="panel-title">Detected <em>Influences</em></div>
+                            <div class="panel-sub">Top behavioural drivers</div>
+                        </div>
+                    </div>
+                    <div class="correlation-list">
+                        <div class="correlation-item">
+                            <div class="corr-icon">🏠</div>
+                            <div class="corr-info">
+                                <div class="corr-title">Local Housing Trend</div>
+                                <div class="corr-factor">Regional Real Estate</div>
+                            </div>
+                            <div class="corr-value">
+                                <div class="corr-percent" style="color: var(--error);">+88%</div>
+                                <div class="corr-bar-wrap">
+                                    <div class="corr-bar-fill" style="width: 88%; background: var(--error);"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="correlation-item">
+                            <div class="corr-icon">🍔</div>
+                            <div class="corr-info">
+                                <div class="corr-title">Peer Dining Patterns</div>
+                                <div class="corr-factor">Social Benchmarks</div>
+                            </div>
+                            <div class="corr-value">
+                                <div class="corr-percent" style="color: var(--warn);">+62%</div>
+                                <div class="corr-bar-wrap">
+                                    <div class="corr-bar-fill" style="width: 62%; background: var(--warn);"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="correlation-item">
+                            <div class="corr-icon">❄️</div>
+                            <div class="corr-info">
+                                <div class="corr-title">Seasonal Trends</div>
+                                <div class="corr-factor">Macro Context</div>
+                            </div>
+                            <div class="corr-value">
+                                <div class="corr-percent" style="color: var(--info);">+45%</div>
+                                <div class="corr-bar-wrap">
+                                    <div class="corr-bar-fill" style="width: 45%; background: var(--info);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const width = document.getElementById('influence-map-container').clientWidth;
+        const height = 500;
+
+        const nodes = [
+            { id: "User Spending", group: "user", size: 28, emoji: "💰" },
+            // Categories
+            { id: "Housing", group: "user", size: 20, emoji: "🏠" },
+            { id: "Dining", group: "user", size: 20, emoji: "🍕" },
+            { id: "Transport", group: "user", size: 20, emoji: "🚗" },
+            { id: "Retail", group: "user", size: 20, emoji: "🛍️" },
+            // External Factors
+            { id: "Local Rent Trend", group: "external", size: 15, emoji: "📉", desc: "Correlates strongly with your housing budget increases." },
+            { id: "Regional Commute", group: "external", size: 15, emoji: "🚉", desc: "Fluctuations in fuel and transit costs in your area." },
+            { id: "Utility Index", group: "external", size: 15, emoji: "⚡", desc: "Seasonal variation in local electricity/water rates." },
+            // Social Benchmarks
+            { id: "Peer Dining Avg", group: "social", size: 15, emoji: "👥", desc: "Average spend of your social demographic on dining." },
+            { id: "Weekend Socials", group: "social", size: 15, emoji: "🍻", desc: "Correlation between weekend events and food expenses." },
+            // Macro
+            { id: "Seasonal Holiday", group: "macro", size: 15, emoji: "🎁", desc: "Impact of festive seasons on discretionary spending." },
+            { id: "Annual Promotions", group: "macro", size: 15, emoji: "🏷️", desc: "The 'Sale Season' effect on your retail behavior." }
+        ];
+
+        const links = [
+            { source: "User Spending", target: "Housing", value: 5, type: "core" },
+            { source: "User Spending", target: "Dining", value: 5, type: "core" },
+            { source: "User Spending", target: "Transport", value: 5, type: "core" },
+            { source: "User Spending", target: "Retail", value: 5, type: "core" },
+
+            { source: "Local Rent Trend", target: "Housing", value: 8, influence: 0.88 },
+            { source: "Utility Index", target: "Housing", value: 4, influence: 0.35 },
+
+            { source: "Peer Dining Avg", target: "Dining", value: 7, influence: 0.62 },
+            { source: "Weekend Socials", target: "Dining", value: 6, influence: 0.55 },
+
+            { source: "Regional Commute", target: "Transport", value: 7, influence: 0.58 },
+
+            { source: "Seasonal Holiday", target: "Retail", value: 6, influence: 0.72 },
+            { source: "Annual Promotions", target: "Retail", value: 5, influence: 0.45 },
+            { source: "Seasonal Holiday", target: "User Spending", value: 3, influence: 0.20 }
+        ];
+
+        const svg = d3.select("#influence-map-container")
+            .append("svg")
+            .attr("width", "100%")
+            .attr("height", height)
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .call(d3.zoom().on("zoom", (event) => {
+                container.attr("transform", event.transform);
+            }));
+
+        const container = svg.append("g");
+
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(d => d.size + 10));
+
+        const link = container.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("stroke", d => d.type === 'core' ? '#c9a84c' : '#94a3b8')
+            .attr("stroke-width", d => Math.sqrt(d.value) * 1.5);
+
+        const node = container.append("g")
+            .attr("class", "nodes")
+            .selectAll(".node")
+            .data(nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("click", (event, d) => showDetails(d));
+
+        node.append("circle")
+            .attr("r", d => d.size)
+            .attr("fill", d => {
+                if (d.group === 'user') return 'var(--gold)';
+                if (d.group === 'external') return 'var(--info)';
+                if (d.group === 'social') return 'var(--success)';
+                return 'var(--warn)';
+            })
+            .attr("filter", "drop-shadow(0 4px 10px rgba(0,0,0,0.1))");
+
+        node.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", d => d.size + 14)
+            .text(d => d.id)
+            .style("font-weight", d => d.group === 'user' ? '600' : '400');
+
+        node.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "0.3em")
+            .style("font-size", d => d.size * 0.8 + "px")
+            .text(d => d.emoji);
+
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        function showDetails(d) {
+            if (d.group === 'user' && d.id !== 'User Spending') {
+                const connectedLinks = links.filter(l => l.target.id === d.id || l.source.id === d.id);
+                const influenceCount = connectedLinks.filter(l => l.type !== 'core').length;
+
+                document.getElementById('active-insight').innerHTML = `
+          <div class="insight-card">
+            <div class="insight-label">Category Node</div>
+            <div class="insight-title">${d.emoji} ${d.id} Analysis</div>
+            <div class="insight-desc">This spending category is influenced by <strong>${influenceCount}</strong> external factors. The strongest correlation comes from local market trends.</div>
+            <div class="influence-score-badge" style="background: var(--gold-dim); color: var(--gold);">Sensitivity: High</div>
+          </div>
+        `;
+            } else if (d.desc) {
+                let badgeColor = d.group === 'external' ? 'var(--info)' : (d.group === 'social' ? 'var(--success)' : 'var(--warn)');
+                document.getElementById('active-insight').innerHTML = `
+          <div class="insight-card">
+            <div class="insight-label">${d.group.toUpperCase()} FACTOR</div>
+            <div class="insight-title">${d.emoji} ${d.id}</div>
+            <div class="insight-desc">${d.desc}</div>
+            <div class="influence-score-badge" style="background: ${badgeColor}15; color: ${badgeColor};">Influence: Measured</div>
+          </div>
+        `;
+            }
+        }
+
+        function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+        }
+
+        function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+        }
+
+        function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+
+        window.simulation = simulation;
+    </script>
+</body>
+
+</html>

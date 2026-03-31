@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinLens — Loan Simulator</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #f3f4f6;
+      --gold: #c9a84c;
+      --gold-light: #e8c97e;
+      --gold-dim: rgba(201, 168, 76, 0.12);
+      --slate: #ffffff;
+      --slate-mid: #f9fafb;
+      --slate-light: #e5e7eb;
+      --success: #16a34a;
+      --warn: #ea580c;
+      --error: #dc2626;
+      --info: #2563eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-gold: rgba(201, 168, 76, 0.35);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%),
+        radial-gradient(circle at 90% 85%, #d1fae5 0%, transparent 45%),
+        var(--ink);
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* FLOATING NAV */
+    .floating-nav {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .floating-nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+      transition: all 0.22s;
+    }
+
+    .floating-nav a:hover,
+    .floating-nav a.active {
+      background: linear-gradient(135deg, #eef2ff, #ffffff);
+      border-color: var(--border-gold);
+      color: var(--gold);
+      transform: translateX(-5px);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.18);
+    }
+
+    .floating-nav a svg {
+      width: 13px;
+      height: 13px;
+      opacity: 0.5;
+    }
+
+    .floating-nav a.active svg {
+      opacity: 1;
+    }
+
+    /* APP WRAPPER */
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 80px 60px 36px;
+    }
+
+    /* HEADER */
+    header {
+      margin-bottom: 34px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .header-left .logo {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 10px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--gold);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .logo-name {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 1.2;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    header p {
+      margin-top: 5px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .user-tag {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--slate);
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    /* LAYOUT GRID */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* PANELS */
+    .panel {
+      background: var(--slate);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.05);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--panel-glow, rgba(201, 168, 76, 0.05)) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* FORM ELEMENTS */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 7px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--slate-mid);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: var(--gold);
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .range-field {
+      margin-bottom: 20px;
+    }
+
+    .range-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .range-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .range-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: var(--slate-light);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      cursor: pointer;
+    }
+
+    .eval-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #c9a84c, #e8c97e);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(201, 168, 76, 0.2);
+      transition: 0.2s;
+    }
+
+    .eval-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(201, 168, 76, 0.3);
+    }
+
+    /* RESULT CARD */
+    .result-panel {
+      display: none;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .verdict {
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .verdict.eligible {
+      background: rgba(45, 212, 160, 0.08);
+      border: 1px solid rgba(45, 212, 160, 0.2);
+    }
+
+    .verdict-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .verdict-title.ok {
+      color: var(--success);
+    }
+
+    .loan-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .loan-metric {
+      background: var(--slate-mid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .lm-label {
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .lm-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .factor-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+
+    .factor-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--slate-light);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .factor-fill {
+      height: 100%;
+      transition: width 0.6s ease;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    thead th {
+      font-size: 9px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .ethics-note {
+      margin-top: 18px;
+      padding: 12px;
+      background: rgba(96, 165, 250, 0.06);
+      border-radius: 10px;
+      font-size: 11px;
+      color: var(--info);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="floating-nav">
+    <a href="dashboard.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>Dashboard</a>
+    <a href="transactions.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>Transactions</a>
+    <a href="behaviour.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>Behaviour</a>
+    <a href="influence.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="4" r="2" />
+        <circle cx="12" cy="20" r="2" />
+        <circle cx="4" cy="12" r="2" />
+        <circle cx="20" cy="12" r="2" />
+        <path d="M12 6v4m0 4v4M6 12h4m4 0h4" />
+      </svg>
+      Influence Map
+    </a>
+    <a href="insights.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>Insights</a>
+    <a href="advisor.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>Advisor</a>
+    <a href="loan.html" class="active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>Loan Sim</a>
+    <a href="reports.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>Reports</a>
+  </nav>
+
+  <div class="app">
+    <header>
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-mark">F</div><span class="logo-name">FinLens</span>
+        </div>
+        <h1>Loan <em>Eligibility</em></h1>
+        <p>Ethical, behaviour-aware risk assessment — Feb 2026</p>
+      </div>
+      <div class="user-tag">
+        <div class="avatar-circle">AV</div>
+        <div style="font-size: 13px; font-weight: 500;">Advay V</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <div class="panel" style="--panel-glow: rgba(201, 168, 76, 0.07)">
+        <div style="margin-bottom: 24px;">
+          <h2 style="font-family:'Cormorant Garamond',serif; font-size: 22px;">Loan <em>Parameters</em></h2>
+          <p style="font-size: 11px; color: var(--text-secondary); font-family: 'DM Mono';">Assessment is transparent
+            and explainable</p>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Monthly Income (₹)</label><input type="number" id="income" value="82400"></div>
+          <div class="field"><label>Existing EMI (₹)</label><input type="number" id="emi" value="0"></div>
+        </div>
+
+        <div class="field">
+          <label>Employment Type</label>
+          <select id="empType">
+            <option value="salaried">Salaried (Stable)</option>
+            <option value="self">Self-Employed</option>
+            <option value="other">Freelance</option>
+          </select>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Dependents</label><input type="number" id="dependents" value="1"></div>
+          <div class="field">
+            <label>Credit History</label>
+            <select id="credit">
+              <option value="good">Good (750+)</option>
+              <option value="avg">Average (600-750)</option>
+              <option value="poor">Poor (<600)< /option>
+            </select>
+          </div>
+        </div>
+
+        <div class="range-field">
+          <div class="range-header"><span class="range-label">Loan Amount</span><span class="range-val"
+              id="loanAmtVal">₹5,00,000</span></div>
+          <input type="range" min="100000" max="2000000" step="50000" value="500000" id="loanAmt"
+            oninput="document.getElementById('loanAmtVal').textContent='₹'+parseInt(this.value).toLocaleString('en-IN')">
+        </div>
+
+        <div class="range-field">
+          <div class="range-header"><span class="range-label">Tenure</span><span class="range-val" id="tenureVal">36
+              months</span></div>
+          <input type="range" min="12" max="84" step="12" value="36" id="tenure"
+            oninput="document.getElementById('tenureVal').textContent=this.value+' months'">
+        </div>
+
+        <button class="eval-btn" onclick="evaluateLoan()">⚖️ Evaluate Eligibility</button>
+
+        <div class="ethics-note">
+          ℹ️ <strong>Ethical Notice:</strong> Assessment uses financial signals only. Age, gender, and caste are never
+          factored into the decision.
+        </div>
+      </div>
+
+      <div class="panel result-panel" id="resultCard" style="--panel-glow: rgba(45, 212, 160, 0.07)">
+        <div id="loanResult"></div>
+        <div class="loan-metrics">
+          <div class="loan-metric">
+            <div class="lm-label">Max Eligible</div>
+            <div class="lm-value" id="maxAmount" style="color:var(--success)">₹—</div>
+          </div>
+          <div class="loan-metric">
+            <div class="lm-label">Monthly EMI</div>
+            <div class="lm-value" id="emiAmount" style="color:var(--gold)">₹—</div>
+          </div>
+          <div class="loan-metric">
+            <div class="lm-label">Interest Rate</div>
+            <div class="lm-value" id="interestRate" style="color:var(--info)">—%</div>
+          </div>
+          <div class="loan-metric">
+            <div class="lm-label">FOIR Ratio</div>
+            <div class="lm-value" id="foirRatio" style="color:var(--warn)">—%</div>
+          </div>
+        </div>
+
+        <div style="font-size: 12px; font-weight: 600; margin-bottom: 12px; color: var(--text-secondary);">ELIGIBILITY
+          FACTORS</div>
+        <div id="factorList">
+          <div class="factor-row"><span>Income Adequacy</span>
+            <div class="factor-bar">
+              <div class="factor-fill" id="f1" style="background:var(--success);width:0%"></div>
+            </div><span id="fv1">0</span>
+          </div>
+          <div class="factor-row"><span>Savings Rate</span>
+            <div class="factor-bar">
+              <div class="factor-fill" id="f2" style="background:var(--success);width:0%"></div>
+            </div><span id="fv2">0</span>
+          </div>
+          <div class="factor-row"><span>Behaviour Score</span>
+            <div class="factor-bar">
+              <div class="factor-fill" id="f5" style="background:var(--warn);width:0%"></div>
+            </div><span id="fv5" class="b-score">73</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <table id="emiTable">
+            <thead>
+              <tr>
+                <th>Tenure</th>
+                <th>Rate</th>
+                <th>EMI</th>
+              </tr>
+            </thead>
+            <tbody id="emiBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let calculatedDisciplineScore = 73;
+    let actualSavingsRate = 0;
+
+    async function fetchUserData() {
+      try {
+        const res = await fetch('http://localhost:5001/api/transactions');
+        if (!res.ok) return;
+        const txs = await res.json();
+
+        let inc = 0, exp = 0;
+        let discSpend = 0;
+        const discCats = ['Shopping', 'Travel', 'Entertainment', 'Food & Dining'];
+        const catSpend = {};
+        const BUDGETS = { 'Food & Dining': 12000, 'Shopping': 8000, 'Travel': 10000, 'Utilities': 4000, 'Entertainment': 3000, 'Healthcare': 5000, 'Education': 6000, 'Other': 4000 };
+        const monthSet = new Set();
+
+        txs.forEach(t => {
+          const d = new Date(t.date);
+          if (!isNaN(d)) monthSet.add(d.getFullYear() + '-' + d.getMonth());
+          if (t.type === 'income') inc += t.amount;
+          else {
+            exp += t.amount;
+            if (discCats.includes(t.cat)) discSpend += t.amount;
+            catSpend[t.cat] = (catSpend[t.cat] || 0) + t.amount;
+          }
+        });
+        const numMonths = Math.max(monthSet.size, 1);
+
+        if (inc > 0) {
+          document.getElementById('income').value = inc;
+
+          const savingsRatio = ((inc - exp) / inc) * 100;
+          actualSavingsRate = Math.round(savingsRatio);
+
+          let score = 100;
+          Object.entries(catSpend).forEach(([cat, totalSpent]) => {
+            const budget = BUDGETS[cat];
+            if (!budget) return;
+            if ((totalSpent / numMonths) > budget) score -= 8;
+          });
+          if (savingsRatio < 0) score -= 25;
+          else if (savingsRatio < 10) score -= 20;
+          else if (savingsRatio < 20) score -= 10;
+          else if (savingsRatio > 20 && savingsRatio <= 30) score += 5;
+          else if (savingsRatio > 30 && savingsRatio <= 50) score += 10;
+          else if (savingsRatio > 50) score += 15;
+
+          const discRatio = exp > 0 ? (discSpend / exp) * 100 : 0;
+          if (discRatio > 70) score -= 10;
+          else if (discRatio > 50) score -= 15;
+
+          calculatedDisciplineScore = Math.min(Math.max(0, score), 100);
+          document.getElementById('fv5').textContent = Math.round(calculatedDisciplineScore);
+        }
+      } catch (e) {
+        console.warn("Could not fetch transactions for loan analysis.");
+      }
+    }
+
+    fetchUserData();
+    setInterval(fetchUserData, 15000);
+
+    function evaluateLoan() {
+      const income = parseFloat(document.getElementById('income').value) || 82400;
+      const loanAmt = parseFloat(document.getElementById('loanAmt').value);
+      const tenure = parseInt(document.getElementById('tenure').value);
+      const credit = document.getElementById('credit').value;
+
+      let baseRate = credit === 'good' ? 9.5 : (credit === 'avg' ? 11.5 : 14.5);
+
+      // Factor in ethical behaviour score to reduce interest rate!
+      if (calculatedDisciplineScore > 80) baseRate -= 0.5;
+      if (calculatedDisciplineScore < 50) baseRate += 1.0;
+
+      const monthlyRate = baseRate / 100 / 12;
+      const emi = loanAmt * monthlyRate * Math.pow(1 + monthlyRate, tenure) / (Math.pow(1 + monthlyRate, tenure) - 1);
+      const foir = Math.round((emi / income) * 100);
+      const maxEligible = Math.round(income * 12 * (calculatedDisciplineScore / 100)); // Behabiour affects eligible amount
+
+      document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('maxAmount').textContent = '₹' + maxEligible.toLocaleString('en-IN');
+      document.getElementById('emiAmount').textContent = '₹' + Math.round(emi).toLocaleString('en-IN');
+      document.getElementById('interestRate').textContent = baseRate.toFixed(1) + '%';
+      document.getElementById('foirRatio').textContent = foir + '%';
+
+      const isEligible = foir <= 60;
+      const verdict = isEligible ? 'Eligible for Loan' : 'High Rejection Risk';
+      const verdictBg = isEligible ? 'background:rgba(45,212,160,0.08)' : 'background:rgba(248,113,113,0.08)';
+      const verdictColor = isEligible ? 'var(--success)' : 'var(--error)';
+      const reasoning = isEligible
+        ? `Based on your ₹${income.toLocaleString()} income and ${Math.round(calculatedDisciplineScore)} discipline score.`
+        : `FOIR is too high (${foir}%). Reduce loan amount.`;
+
+      document.getElementById('loanResult').innerHTML = `
+        <div style="background:var(--slate-mid);padding:16px;border-radius:12px;margin-bottom:16px;">
+          <h3 style="font-size:16px;margin-bottom:12px"> Assessment Summary</h3>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">Requested Amount: <strong style="color:var(--text-primary)">₹${loanAmt.toLocaleString('en-IN')}</strong> for ${tenure} months</p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">Calculated EMI: <strong style="color:var(--text-primary)">₹${Math.round(emi).toLocaleString('en-IN')}</strong></p>
+          <p style="font-size:13px;color:var(--text-secondary);margin-bottom:6px">Final Interest Rate: <strong style="color:var(--gold)">${baseRate.toFixed(1)}%</strong></p>
+        </div>
+        <div style="padding:16px;border-radius:12px;${verdictBg};border:1px solid ${verdictColor}55;">
+          <h2 style="font-size:20px;font-family:'Cormorant Garamond',serif;color:${verdictColor};margin-bottom:8px"> ${verdict}</h2>
+          <p style="font-size:14px;color:var(--text-secondary);line-height:1.5">${reasoning}</p>
+        </div>
+        <p style="margin-top:14px;font-size:11px;color:var(--gold);text-align:center;"><span style="display:inline-block;animation:pulse 2s infinite">●</span> Saved securely to FinLens Database and Reports Page</p>
+      `;
+
+      try {
+        fetch('http://localhost:5001/api/loans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: loanAmt,
+            rate: baseRate,
+            tenure,
+            emi: Math.round(emi),
+            foir: Math.round(foir * 10) / 10,
+            maxEligible: Math.round(maxEligible),
+            verdict: isEligible ? 'Eligible' : 'Rejected'
+          })
+        });
+      } catch (err) {
+        console.error('Save failed:', err);
+      }
+
+
+      const factors = [
+        Math.min(100, Math.round((income / 100000) * 100)), // Income Adequacy
+        Math.max(0, actualSavingsRate), // Savings Rate
+        Math.round(calculatedDisciplineScore) // Behaviour Score
+      ];
+
+      factors.forEach((val, i) => {
+        const idx = i === 2 ? 5 : i + 1;
+        document.getElementById(`f${idx}`).style.width = val + '%';
+        document.getElementById(`fv${idx}`).textContent = val;
+        if (val < 40) document.getElementById(`f${idx}`).style.background = 'var(--error)';
+        else if (val < 70) document.getElementById(`f${idx}`).style.background = 'var(--warn)';
+        else document.getElementById(`f${idx}`).style.background = 'var(--success)';
+      });
+
+      // Table Generation
+      const tenures = [12, 24, 36, 48];
+      document.getElementById('emiBody').innerHTML = tenures.map(t => {
+        const e = Math.round(loanAmt * monthlyRate * Math.pow(1 + monthlyRate, t) / (Math.pow(1 + monthlyRate, t) - 1));
+        return `<tr><td>${t}m</td><td>${baseRate.toFixed(1)}%</td><td>₹${e.toLocaleString('en-IN')}</td></tr>`;
+      }).join('');
+    }
+  </script>
+</body>
+
+</html>

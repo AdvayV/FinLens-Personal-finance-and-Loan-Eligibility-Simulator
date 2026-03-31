@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinLens — Dashboard</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #f3f4f6;
+      --gold: #c9a84c;
+      --gold-light: #e8c97e;
+      --gold-dim: rgba(201, 168, 76, 0.12);
+      --slate: #ffffff;
+      --slate-mid: #f9fafb;
+      --slate-light: #e5e7eb;
+      --success: #16a34a;
+      --warn: #ea580c;
+      --error: #dc2626;
+      --info: #2563eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-gold: rgba(201, 168, 76, 0.35);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%),
+        radial-gradient(circle at 90% 85%, #d1fae5 0%, transparent 45%),
+        radial-gradient(circle at 60% 40%, #e0f2fe 0%, transparent 35%),
+        var(--ink);
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ===== FLOATING NAV ===== */
+    .floating-nav {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .floating-nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+      transition: all 0.22s;
+      letter-spacing: 0.01em;
+    }
+
+    .floating-nav a:hover,
+    .floating-nav a.active {
+      background: linear-gradient(135deg, #eef2ff, #ffffff);
+      border-color: var(--border-gold);
+      color: var(--gold);
+      transform: translateX(-5px);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.18);
+    }
+
+    .floating-nav a svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    .floating-nav a:hover svg,
+    .floating-nav a.active svg {
+      opacity: 1;
+    }
+
+    /* ===== APP WRAPPER ===== */
+    .app {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 36px 80px 60px 36px;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      margin-bottom: 34px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .header-left .logo {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 10px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--gold);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .logo-name {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 1.2;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    header p {
+      margin-top: 5px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .period-tabs {
+      display: flex;
+      background: var(--slate);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 3px;
+    }
+
+    .period-tabs button {
+      padding: 7px 13px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .period-tabs button.active {
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid var(--border-gold);
+    }
+
+    .btn-gold {
+      padding: 9px 18px;
+      background: linear-gradient(135deg, #c9a84c, #e8c97e);
+      border: none;
+      border-radius: 8px;
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(201, 168, 76, 0.25);
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-gold:hover {
+      box-shadow: 0 10px 28px rgba(201, 168, 76, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-sm {
+      padding: 7px 14px;
+      border-radius: 7px;
+      border: 1px solid var(--border-gold);
+      background: transparent;
+      color: var(--gold);
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-outline-sm:hover {
+      background: var(--gold-dim);
+    }
+
+    /* ===== FLOATING PANELS ===== */
+    .panel {
+      background: var(--slate);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--panel-glow, rgba(201, 168, 76, 0.05)) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .panel:hover {
+      border-color: rgba(201, 168, 76, 0.16);
+      box-shadow: 0 22px 56px rgba(0, 0, 0, 0.38), 0 4px 12px rgba(201, 168, 76, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 19px;
+      font-weight: 400;
+    }
+
+    .panel-title em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .panel-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+
+    /* ===== KPI GRID ===== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .kpi-card {
+      border-radius: 13px;
+      padding: 16px;
+      background: var(--slate-mid);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .kpi-card:hover {
+      border-color: var(--border-gold);
+    }
+
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--kg, rgba(201, 168, 76, 0.08)) 0%, transparent 70%);
+    }
+
+    .kpi-card:nth-child(2) {
+      --kg: rgba(45, 212, 160, 0.08);
+    }
+
+    .kpi-card:nth-child(3) {
+      --kg: rgba(96, 165, 250, 0.08);
+    }
+
+    .kpi-card:nth-child(4) {
+      --kg: rgba(251, 146, 60, 0.08);
+    }
+
+    .kpi-icon {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .kpi-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .kpi-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 25px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .kpi-change {
+      margin-top: 7px;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .up {
+      color: var(--success);
+    }
+
+    .down {
+      color: var(--error);
+    }
+
+    .neutral {
+      color: var(--text-secondary);
+    }
+
+    /* ===== CHARTS ROW ===== */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .bar-chart-wrap {
+      padding-bottom: 22px;
+    }
+
+    .bar-chart {
+      height: 140px;
+      display: flex;
+      align-items: flex-end;
+      gap: 9px;
+      padding-top: 8px;
+    }
+
+    .bar-group {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      position: relative;
+    }
+
+    .bar {
+      flex: 1;
+      border-radius: 4px 4px 0 0;
+      transition: opacity 0.2s;
+      cursor: pointer;
+    }
+
+    .bar:hover {
+      opacity: 0.75;
+    }
+
+    .bar.income {
+      background: linear-gradient(180deg, var(--gold), rgba(201, 168, 76, 0.3));
+    }
+
+    .bar.expense {
+      background: linear-gradient(180deg, var(--info), rgba(96, 165, 250, 0.3));
+    }
+
+    .bar-label {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 140px;
+      position: relative;
+    }
+
+    .donut-svg {
+      width: 126px;
+      height: 126px;
+    }
+
+    .donut-center {
+      position: absolute;
+      text-align: center;
+    }
+
+    .donut-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .donut-lbl {
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 3px;
+    }
+
+    .cat-list {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .cat-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .cat-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: var(--slate-light);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .cat-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    .cat-pct {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+      width: 28px;
+      text-align: right;
+    }
+
+    /* ===== BOTTOM ROW ===== */
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 18px;
+    }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tx-item:last-child {
+      border-bottom: none;
+    }
+
+    .tx-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .tx-desc {
+      flex: 1;
+    }
+
+    .tx-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .tx-cat {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+
+    .tx-right {
+      text-align: right;
+    }
+
+    .tx-amount {
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .tx-amount.credit {
+      color: var(--success);
+    }
+
+    .tx-amount.debit {
+      color: var(--error);
+    }
+
+    .tx-date {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 2px;
+    }
+
+    .score-ring-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      height: 130px;
+      margin-bottom: 16px;
+    }
+
+    .score-ring {
+      width: 118px;
+      height: 118px;
+    }
+
+    .score-center {
+      position: absolute;
+      text-align: center;
+    }
+
+    .score-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .score-lbl {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .score-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .sb-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .sb-label {
+      color: var(--text-secondary);
+    }
+
+    .sb-bar-w {
+      width: 88px;
+      height: 4px;
+      background: var(--slate-light);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .sb-bar {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    }
+
+    .sb-val {
+      font-family: 'DM Mono', monospace;
+      color: var(--text-primary);
+      width: 24px;
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .alert-strip {
+      background: rgba(251, 146, 60, 0.08);
+      border: 1px solid rgba(251, 146, 60, 0.22);
+      border-radius: 9px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--warn);
+    }
+
+    /* Orbs */
+    .orb {
+      position: fixed;
+      pointer-events: none;
+      z-index: -1;
+      border-radius: 50%;
+      filter: blur(60px);
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      top: -100px;
+      left: -100px;
+      background: radial-gradient(circle, rgba(201, 168, 76, 0.06) 0%, transparent 70%);
+    }
+
+    .orb-2 {
+      width: 340px;
+      height: 340px;
+      bottom: 0;
+      right: 60px;
+      background: radial-gradient(circle, rgba(45, 212, 160, 0.05) 0%, transparent 70%);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- FLOATING NAV -->
+  <nav class="floating-nav">
+    <a href="dashboard.html" class="active">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+      Dashboard
+    </a>
+    <a href="transactions.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>
+      Transactions
+    </a>
+    <a href="behaviour.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      Behaviour
+    </a>
+    <a href="influence.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="4" r="2" />
+        <circle cx="12" cy="20" r="2" />
+        <circle cx="4" cy="12" r="2" />
+        <circle cx="20" cy="12" r="2" />
+        <path d="M12 6v4m0 4v4M6 12h4m4 0h4" />
+      </svg>
+      Influence Map
+    </a>
+    <a href="insights.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>Insights</a>
+    <a href="advisor.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
+      AI Advisor
+    </a>
+    <a href="loan.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+      Loan Sim
+    </a>
+    <a href="reports.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      Reports
+    </a>
+  </nav>
+
+  <div class="app">
+
+    <!-- Header -->
+    <header>
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-mark">F</div>
+          <span class="logo-name">FinLens</span>
+        </div>
+        <h1>Financial <em>Overview</em></h1>
+        <p>Behaviour-aware analytics with ethical loan eligibility assessment — February 2025</p>
+      </div>
+      <div class="header-actions">
+        <div class="period-tabs">
+          <button>7D</button><button class="active">1M</button><button>3M</button><button>1Y</button>
+        </div>
+        <a href="transactions.html" class="btn-gold">+ Add Transaction</a>
+      </div>
+    </header>
+
+    <!-- KPI Panel -->
+    <div class="panel" style="--panel-glow: rgba(201,168,76,0.07)">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Key <em>Metrics</em></div>
+          <div class="panel-sub">Monthly snapshot · Feb 2025</div>
+        </div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon">💰</div>
+          <div class="kpi-label">Total Income</div>
+          <div class="kpi-value" id="kpi-income">₹0</div>
+          <div class="kpi-change up" id="kpi-income-change">Updating...</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">💸</div>
+          <div class="kpi-label">Total Expense</div>
+          <div class="kpi-value" id="kpi-expense">₹0</div>
+          <div class="kpi-change down" id="kpi-exp-change">Updating...</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🏦</div>
+          <div class="kpi-label">Net Savings</div>
+          <div class="kpi-value" id="kpi-savings">₹0</div>
+          <div class="kpi-change up" id="kpi-save-change">Updating...</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🧮</div>
+          <div class="kpi-label">Discipline Score</div>
+          <div class="kpi-value"><span id="kpi-score">-</span> / 100</div>
+          <div class="kpi-change neutral" id="kpi-score-change">Updating...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+      <div class="panel" style="--panel-glow: rgba(96,165,250,0.05)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Income <em>vs</em> Expenses</div>
+            <div class="panel-sub">Monthly comparison · 2025</div>
+          </div>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--gold)"></div>Income
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background:var(--info)"></div>Expense
+            </div>
+          </div>
+        </div>
+        <div class="bar-chart-wrap">
+          <div class="bar-chart">
+            <div class="bar-group">
+              <div class="bar income" style="height:70px"></div>
+              <div class="bar expense" style="height:48px"></div><span class="bar-label">SEP</span>
+            </div>
+            <div class="bar-group">
+              <div class="bar income" style="height:82px"></div>
+              <div class="bar expense" style="height:58px"></div><span class="bar-label">OCT</span>
+            </div>
+            <div class="bar-group">
+              <div class="bar income" style="height:76px"></div>
+              <div class="bar expense" style="height:66px"></div><span class="bar-label">NOV</span>
+            </div>
+            <div class="bar-group">
+              <div class="bar income" style="height:86px"></div>
+              <div class="bar expense" style="height:63px"></div><span class="bar-label">DEC</span>
+            </div>
+            <div class="bar-group">
+              <div class="bar income" style="height:72px"></div>
+              <div class="bar expense" style="height:50px"></div><span class="bar-label">JAN</span>
+            </div>
+            <div class="bar-group">
+              <div class="bar income" style="height:92px"></div>
+              <div class="bar expense" style="height:60px"></div><span class="bar-label">FEB</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="--panel-glow: rgba(45,212,160,0.05)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Spend <em>Categories</em></div>
+            <div class="panel-sub">This month</div>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" viewBox="0 0 36 36" id="donut-chart-svg">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2a2f3a" stroke-width="3.5" />
+          </svg>
+          <div class="donut-center">
+            <div class="donut-val" id="cat-donut-val">₹0</div>
+            <div class="donut-lbl">Total Spent</div>
+          </div>
+        </div>
+        <div class="cat-list" id="cat-list-container">
+          <p style="font-size:12px;color:rgba(255,255,255,0.4)">Loading data...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="bottom-row">
+      <div class="panel" style="--panel-glow: rgba(96,165,250,0.04)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Recent <em>Transactions</em></div>
+            <div class="panel-sub">Last 5 entries</div>
+          </div>
+          <a href="transactions.html" class="btn-outline-sm">View All →</a>
+        </div>
+        <div id="tx-list">
+          <!-- Dyn list -->
+          <p style="padding:10px; font-size:12px; color:gray">Loading...</p>
+        </div>
+      </div>
+
+      <div class="panel" style="--panel-glow: rgba(251,146,60,0.04)">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Discipline <em>Score</em></div>
+            <div class="panel-sub">Behaviour-based rating</div>
+          </div>
+          <a href="behaviour.html" class="btn-outline-sm">Details →</a>
+        </div>
+        <div class="score-ring-wrap">
+          <svg class="score-ring" viewBox="0 0 36 36">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2a2f3a" stroke-width="2.8" />
+            <circle id="dash-score-ring" cx="18" cy="18" r="15.9" fill="none" stroke="url(#sg)" stroke-width="2.8"
+              stroke-dasharray="0 100" stroke-dashoffset="25" transform="rotate(-90 18 18)" stroke-linecap="round" />
+            <defs>
+              <linearGradient id="sg" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#c9a84c" />
+                <stop offset="100%" stop-color="#2dd4a0" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="score-center">
+            <div class="score-num" id="dash-score-num">-</div>
+            <div class="score-lbl">/ 100</div>
+          </div>
+        </div>
+        <div class="score-breakdown">
+          <div class="sb-item"><span class="sb-label">Savings Rate</span>
+            <div class="sb-bar-w">
+              <div class="sb-bar" id="score-bar-1" style="width:0%"></div>
+            </div><span class="sb-val" id="score-val-1">0</span>
+          </div>
+          <div class="sb-item"><span class="sb-label">Discretionary</span>
+            <div class="sb-bar-w">
+              <div class="sb-bar" id="score-bar-2" style="width:0%"></div>
+            </div><span class="sb-val" id="score-val-2">0</span>
+          </div>
+        </div>
+        <div class="alert-strip" id="dash-score-alert">Loading data...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.querySelectorAll('.period-tabs button').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.period-tabs button').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch('http://localhost:5001/api/transactions');
+        if (!res.ok) return;
+        const items = await res.json();
+
+        let inc = 0, exp = 0, discSpend = 0;
+        const discCats = ['Shopping', 'Travel', 'Entertainment', 'Food & Dining'];
+        const catSpend = {};
+        const BUDGETS = { 'Food & Dining': 12000, 'Shopping': 8000, 'Travel': 10000, 'Utilities': 4000, 'Entertainment': 3000, 'Healthcare': 5000, 'Education': 6000, 'Other': 4000 };
+
+        // Count distinct months for monthly-average calculations
+        const monthSet = new Set();
+        items.forEach(t => {
+          const d = new Date(t.date);
+          if (!isNaN(d)) monthSet.add(d.getFullYear() + '-' + d.getMonth());
+          if (t.type === 'income') inc += t.amount;
+          else {
+            exp += t.amount;
+            if (discCats.includes(t.cat)) discSpend += t.amount;
+            catSpend[t.cat] = (catSpend[t.cat] || 0) + t.amount;
+          }
+        });
+        const numMonths = Math.max(monthSet.size, 1);
+
+        const net = inc - exp;
+
+        // KPI Cards
+        document.getElementById('kpi-income').textContent = '₹' + inc.toLocaleString('en-IN');
+        document.getElementById('kpi-expense').textContent = '₹' + exp.toLocaleString('en-IN');
+        document.getElementById('kpi-savings').textContent = '₹' + net.toLocaleString('en-IN');
+
+        document.getElementById('kpi-income-change').textContent = inc > 0 ? "Total sum" : "";
+        document.getElementById('kpi-exp-change').textContent = exp > 0 ? "Total sum" : "";
+        document.getElementById('kpi-save-change').textContent = net >= 0 ? "Positive Net Flow" : "Negative Flow";
+
+        // Discipline Score — SAME formula as behaviour.html
+        let saveRatio = 0, discRatio = 0;
+        if (inc > 0) saveRatio = ((inc - exp) / inc) * 100;
+        if (exp > 0) discRatio = (discSpend / exp) * 100;
+
+        let scr = 100;
+
+        // Budget violations: -8 per category where monthly avg > budget
+        Object.entries(catSpend).forEach(([cat, totalSpent]) => {
+          const budget = BUDGETS[cat];
+          if (!budget) return;
+          const monthlyAvg = totalSpent / numMonths;
+          if (monthlyAvg > budget) scr -= 8;
+        });
+
+        // Savings penalties / bonus
+        if (saveRatio < 0) scr -= 25;
+        else if (saveRatio < 10) scr -= 20;
+        else if (saveRatio < 20) scr -= 10;
+        else if (saveRatio > 20 && saveRatio <= 30) scr += 5;
+        else if (saveRatio > 30 && saveRatio <= 50) scr += 10;
+        else if (saveRatio > 50) scr += 15;
+
+        // Discretionary penalties
+        if (discRatio > 70) scr -= 10;
+        else if (discRatio > 50) scr -= 15;
+
+        if (inc === 0 && exp === 0) scr = 0;
+        scr = Math.max(0, Math.min(100, scr));
+
+        document.getElementById('kpi-score').textContent = Math.round(scr);
+        document.getElementById('kpi-score-change').textContent = "Real-time Update";
+
+        // Render Recent 5
+        let html = '';
+        const emojiMap = { 'Food & Dining': '🍽️', 'Shopping': '🛍️', 'Travel': '✈️', 'Utilities': '⚡', 'Entertainment': '🎬', 'Healthcare': '🏥', 'Education': '📚', 'Income': '💼', 'Other': '📦' };
+
+        items.slice(0, 5).forEach(t => {
+          const cls = t.type === 'income' ? 'credit' : 'debit';
+          const sign = t.type === 'income' ? '+' : '−';
+          const em = emojiMap[t.cat] || '💳';
+          html += `
+        <div class="tx-item">
+          <div class="tx-icon" style="background:rgba(201,168,76,0.1)">${em}</div>
+          <div class="tx-desc">
+            <div class="tx-name">${t.desc}</div><div class="tx-cat">${t.cat}</div>
+          </div>
+          <div class="tx-right">
+            <div class="tx-amount ${cls}">${sign}₹${t.amount.toLocaleString('en-IN')}</div>
+            <div class="tx-date">${new Date(t.date).toLocaleDateString()}</div>
+          </div>
+        </div>
+      `;
+        });
+        document.getElementById('tx-list').innerHTML = html || '<p style="padding:10px; font-size:12px; color:gray">No transactions yet.</p>';
+
+        // Update Bottom Discipline Section
+        document.getElementById('dash-score-num').textContent = Math.round(scr);
+        if (scr > 0) document.getElementById('dash-score-ring').setAttribute('stroke-dasharray', `${scr} 100`);
+
+        document.getElementById('score-val-1').textContent = Math.round(Math.max(0, saveRatio));
+        document.getElementById('score-bar-1').style.width = Math.min(100, Math.max(0, saveRatio)) + '%';
+
+        document.getElementById('score-val-2').textContent = Math.round(100 - discRatio);
+        document.getElementById('score-bar-2').style.width = Math.max(0, 100 - discRatio) + '%';
+
+        if (scr < 60) document.getElementById('dash-score-alert').textContent = '⚠️ Behaviour warning: Low savings or high discretionary spend.';
+        else document.getElementById('dash-score-alert').textContent = '✅ Excellent financial health habits maintained.';
+
+        // Category Spend Donut & List Setup
+        const catStats = {};
+        items.forEach(t => {
+          if (t.type !== 'income') {
+            catStats[t.cat] = (catStats[t.cat] || 0) + t.amount;
+          }
+        });
+
+        // Convert obj to array and sort desc
+        const sortedCats = Object.entries(catStats).sort((a, b) => b[1] - a[1]);
+
+        let catHtml = '';
+        let svgHtml = '<circle cx="18" cy="18" r="15.9" fill="none" stroke="#2a2f3a" stroke-width="3.5" />';
+
+        if (sortedCats.length > 0) {
+          const colors = ['#c9a84c', '#60a5fa', '#2dd4a0', '#f87171', '#a78bfa', '#fb923c', '#9ca3af'];
+          let currentOffset = 25; // 25 is 'Top' in SVG coords since circle starts at 3 o'clock
+
+          sortedCats.forEach((c, idx) => {
+            const name = c[0];
+            const amount = c[1];
+            const pct = Math.round((amount / exp) * 100);
+            const col = colors[idx % colors.length];
+
+            catHtml += `
+              <div class="cat-item">
+                <div style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></div>
+                <span style="flex:1;font-size:10px;color:var(--text-secondary)">${name}</span>
+                <div class="cat-bar-bg">
+                  <div class="cat-bar-fill" style="width:${pct}%;background:${col}"></div>
+                </div>
+                <span class="cat-pct">${pct}%</span>
+              </div>
+             `;
+
+            // SVG circle piece
+            svgHtml += `
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="${col}" stroke-width="3.5" 
+                  stroke-dasharray="${pct} ${100 - pct}" stroke-dashoffset="${currentOffset}" transform="rotate(-90 18 18)" />
+             `;
+            currentOffset -= pct;
+          });
+        } else {
+          catHtml = '<p style="font-size:12px;color:rgba(255,255,255,0.4)">No expenses tracked.</p>';
+        }
+
+        document.getElementById('donut-chart-svg').innerHTML = svgHtml;
+        document.getElementById('cat-list-container').innerHTML = catHtml;
+
+        let expText = exp >= 1000 ? '₹' + (exp / 1000).toFixed(0) + 'K' : '₹' + exp;
+        document.getElementById('cat-donut-val').textContent = expText;
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    loadDashboard();
+    setInterval(loadDashboard, 15000); // auto-refresh every 15s
+  </script>
+</body>
+
+</html>

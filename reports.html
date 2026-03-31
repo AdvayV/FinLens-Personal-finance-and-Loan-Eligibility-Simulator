@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinLens — Reports & Audit</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #f3f4f6;
+      --gold: #c9a84c;
+      --gold-light: #e8c97e;
+      --gold-dim: rgba(201, 168, 76, 0.12);
+      --slate: #ffffff;
+      --slate-mid: #f9fafb;
+      --slate-light: #e5e7eb;
+      --success: #16a34a;
+      --warn: #ea580c;
+      --error: #dc2626;
+      --info: #2563eb;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-gold: rgba(201, 168, 76, 0.35);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%),
+        radial-gradient(circle at 90% 85%, #d1fae5 0%, transparent 45%),
+        radial-gradient(circle at 60% 40%, #e0f2fe 0%, transparent 35%),
+        var(--ink);
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* FLOATING NAV */
+    .floating-nav {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+
+    .floating-nav a {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+      transition: all 0.22s;
+      letter-spacing: 0.01em;
+    }
+
+    .floating-nav a:hover,
+    .floating-nav a.active {
+      background: linear-gradient(135deg, #eef2ff, #ffffff);
+      border-color: var(--border-gold);
+      color: var(--gold);
+      transform: translateX(-5px);
+      box-shadow: 0 10px 28px rgba(99, 102, 241, 0.18);
+    }
+
+    .floating-nav a svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    .floating-nav a:hover svg,
+    .floating-nav a.active svg {
+      opacity: 1;
+    }
+
+    .main {
+      flex: 1;
+      max-width: 1200px;
+      padding: 40px 100px 60px 40px;
+      /* Extra right padding for floating nav */
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 400;
+    }
+
+    .page-title em {
+      font-style: italic;
+      color: var(--gold-light);
+    }
+
+    .page-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .user-tag {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--slate);
+      padding: 6px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .avatar-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .actions-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-sm {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #c9a84c, #e8c97e);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 6px 18px rgba(201, 168, 76, 0.25);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-gold) !important;
+      color: var(--gold);
+    }
+
+    /* Summary Strip */
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .strip-item {
+      background: var(--slate);
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .strip-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 5px;
+    }
+
+    .strip-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    /* Report Cards Grid */
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .report-card {
+      background: var(--slate);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .report-card:hover {
+      border-color: var(--border-gold);
+      transform: translateY(-2px);
+    }
+
+    .report-card::after {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--glow, rgba(201, 168, 76, 0.07)) 0%, transparent 70%);
+    }
+
+    .report-card:nth-child(2) {
+      --glow: rgba(45, 212, 160, 0.07);
+    }
+
+    .report-card:nth-child(3) {
+      --glow: rgba(96, 165, 250, 0.07);
+    }
+
+    .report-card:nth-child(4) {
+      --glow: rgba(251, 146, 60, 0.07);
+    }
+
+    .report-card:nth-child(5) {
+      --glow: rgba(167, 139, 250, 0.07);
+    }
+
+    .report-card:nth-child(6) {
+      --glow: rgba(248, 113, 113, 0.07);
+    }
+
+    .rc-icon {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .rc-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .rc-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .rc-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .rc-date {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .rc-badge {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      padding: 3px 9px;
+      border-radius: 4px;
+    }
+
+    .rc-badge.new {
+      background: rgba(45, 212, 160, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(45, 212, 160, 0.2);
+    }
+
+    .rc-badge.pending {
+      background: rgba(251, 146, 60, 0.1);
+      color: var(--warn);
+      border: 1px solid rgba(251, 146, 60, 0.2);
+    }
+
+    .rc-badge.ready {
+      background: var(--gold-dim);
+      color: var(--gold);
+      border: 1px solid var(--border-gold);
+    }
+
+    /* Two-column layout */
+    .bottom-layout {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 22px;
+    }
+
+    .card {
+      background: var(--slate);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 18px;
+    }
+
+    /* Audit Trail */
+    .audit-trail {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .audit-trail::before {
+      content: '';
+      position: absolute;
+      left: 16px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .audit-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 20px;
+      position: relative;
+    }
+
+    .audit-item:last-child {
+      padding-bottom: 0;
+    }
+
+    .audit-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .audit-content {
+      flex: 1;
+      padding-top: 4px;
+    }
+
+    .audit-action {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .audit-detail {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .audit-time {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      margin-top: 4px;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      font-family: 'DM Mono', monospace;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status-chip {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .chip-green {
+      background: rgba(45, 212, 160, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(45, 212, 160, 0.2);
+    }
+
+    .chip-amber {
+      background: rgba(251, 146, 60, 0.1);
+      color: var(--warn);
+      border: 1px solid rgba(251, 146, 60, 0.2);
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="floating-nav">
+    <a href="dashboard.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>Dashboard</a>
+    <a href="transactions.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+      </svg>Transactions</a>
+    <a href="behaviour.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>Behaviour</a>
+    <a href="influence.html">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="4" r="2" />
+        <circle cx="12" cy="20" r="2" />
+        <circle cx="4" cy="12" r="2" />
+        <circle cx="20" cy="12" r="2" />
+        <path d="M12 6v4m0 4v4M6 12h4m4 0h4" />
+      </svg>
+      Influence Map
+    </a>
+    <a href="insights.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>Insights</a>
+    <a href="advisor.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>Advisor</a>
+    <a href="loan.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>Loan Sim</a>
+    <a href="reports.html" class="active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path
+          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>Reports</a>
+  </nav>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="page-title">Reports &amp; <em>Audit</em> Trails</h1>
+        <p class="page-sub">Download, review, and audit all financial activity and assessments</p>
+      </div>
+      <div style="display: flex; gap: 20px; align-items: center;">
+        <div class="user-tag">
+          <div class="avatar-circle">AV</div>
+          <div style="font-size: 13px; font-weight: 500;">Advay Vivek</div>
+        </div>
+        <div class="actions-row">
+          <button class="btn-sm btn-outline">↓ Export All</button>
+          <button class="btn-sm btn-gold">Generate Report</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC SUMMARY STRIP -->
+    <div class="summary-strip">
+      <div class="strip-item">
+        <div class="strip-label">Total Transactions</div>
+        <div class="strip-val" id="s-txns" style="color:var(--gold)">…</div>
+      </div>
+      <div class="strip-item">
+        <div class="strip-label">Loan Assessments</div>
+        <div class="strip-val" id="loan-assess-counter" style="color:var(--info)">…</div>
+      </div>
+      <div class="strip-item">
+        <div class="strip-label">Categories Tracked</div>
+        <div class="strip-val" id="s-cats" style="color:var(--success)">…</div>
+      </div>
+      <div class="strip-item">
+        <div class="strip-label">Months Tracked</div>
+        <div class="strip-val" id="s-months" style="color:var(--warn)">…</div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC REPORT CARDS -->
+    <div class="reports-grid" id="report-cards">
+      <p style="font-size:12px;color:gray;">Loading reports…</p>
+    </div>
+
+    <div class="bottom-layout">
+      <!-- AUDIT TRAIL (already dynamic) -->
+      <div class="card">
+        <div class="card-title">System Audit Trail</div>
+        <div class="card-sub">All user and system actions — immutable log</div>
+        <div class="audit-trail" id="audit-list">
+          <p style="font-size:12px;color:gray;">Loading audit history…</p>
+        </div>
+      </div>
+
+      <!-- FINANCIAL SNAPSHOT + LOAN ASSESSMENT -->
+      <div class="card">
+        <div class="card-title">Financial Snapshot</div>
+        <div class="card-sub">Live data from tracked transactions</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="snapshot-body">
+            <tr>
+              <td colspan="2" style="font-size:12px;color:gray">Loading…</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top:22px">
+          <div class="card-title">Loan Assessment History</div>
+          <div class="card-sub">Saved simulations and formal eligibility verdicts</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Rate</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody id="loan-body">
+              <tr>
+                <td colspan="4" style="font-size:12px;color:gray">Loading…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:22px">
+          <div class="card-title">Ethics Certification</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+            <div style="display:flex;align-items:center;gap:10px;font-size:12px"><span
+                style="color:var(--success)">✓</span><span style="color:var(--text-secondary)">No gender, age, or caste
+                bias in any assessment</span></div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:12px"><span
+                style="color:var(--success)">✓</span><span style="color:var(--text-secondary)">All loan decisions fully
+                explainable and auditable</span></div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:12px"><span
+                style="color:var(--success)">✓</span><span style="color:var(--text-secondary)">Score methodology
+                consistent across all pages</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API = 'http://localhost:5001/api/transactions';
+    const DISC_CATS = new Set(['Shopping', 'Travel', 'Entertainment', 'Food & Dining']);
+    const BUDGETS = { 'Food & Dining': 12000, 'Shopping': 8000, 'Travel': 10000, 'Utilities': 4000, 'Entertainment': 3000, 'Healthcare': 5000, 'Education': 6000, 'Other': 4000 };
+    const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+    function computeScore(txs, numMonths) {
+      let inc = 0, exp = 0, disc = 0; const cs = {};
+      txs.forEach(tx => { if (tx.type === 'income') inc += tx.amount; else { exp += tx.amount; if (DISC_CATS.has(tx.cat)) disc += tx.amount; cs[tx.cat] = (cs[tx.cat] || 0) + tx.amount; } });
+      const sr = inc > 0 ? ((inc - exp) / inc) * 100 : 0, dr = exp > 0 ? (disc / exp) * 100 : 0;
+      let s = 100;
+      Object.entries(cs).forEach(([c, t]) => { const b = BUDGETS[c]; if (b && (t / numMonths) > b) s -= 8; });
+      if (sr < 0) s -= 25; else if (sr < 10) s -= 20; else if (sr < 20) s -= 10;
+      else if (sr > 20 && sr <= 30) s += 5; else if (sr > 30 && sr <= 50) s += 10; else if (sr > 50) s += 15;
+      if (dr > 70) s -= 10; else if (dr > 50) s -= 15;
+      if (inc === 0 && exp === 0) s = 0;
+      return { score: Math.min(Math.max(s, 0), 100), inc, exp, disc, saveRatio: sr, discRatio: dr, catSpend: cs };
+    }
+
+    async function loadReports() {
+      try {
+        const res = await fetch(API);
+        if (!res.ok) return;
+        const items = await res.json();
+        if (!items.length) return;
+
+        // Group by month
+        const byMonth = {};
+        const catSet = new Set();
+        const monthSet = new Set();
+        items.forEach(tx => {
+          const d = new Date(tx.date); if (isNaN(d)) return;
+          const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+          (byMonth[key] = byMonth[key] || []).push(tx);
+          if (tx.type !== 'income') catSet.add(tx.cat);
+          monthSet.add(key);
+        });
+        const sortedKeys = Object.keys(byMonth).sort();
+        const numMonths = sortedKeys.length;
+
+        // Overall score
+        const overall = computeScore(items, numMonths);
+
+        // ── SUMMARY STRIP ──
+        document.getElementById('s-txns').textContent = items.length;
+        document.getElementById('s-cats').textContent = catSet.size;
+        document.getElementById('s-months').textContent = numMonths;
+
+        const scoreEl = document.getElementById('s-score');
+        if (scoreEl) scoreEl.textContent = Math.round(overall.score) + '/100';
+
+
+
+
+        // ── REPORT CARDS (per month, last 6) ──
+        const recentKeys = sortedKeys.slice(-6).reverse();
+        const icons = ['📊', '📈', '📋', '🏦', '💹', '📉'];
+        const badges = ['new', 'ready', 'ready', 'ready', 'ready', 'ready'];
+
+        let cardHtml = '';
+        recentKeys.forEach((key, i) => {
+          const [y, m] = key.split('-').map(Number);
+          const monthName = MN[m] + ' ' + y;
+          const mTxs = byMonth[key];
+          const mScore = computeScore(mTxs, 1);
+          const mInc = mScore.inc, mExp = mScore.exp;
+          const grade = mScore.score >= 80 ? 'A' : mScore.score >= 60 ? 'B' : mScore.score >= 40 ? 'C' : 'D';
+          const txCount = mTxs.length;
+
+          cardHtml += `
+            <div class="report-card">
+              <div class="rc-icon">${icons[i % icons.length]}</div>
+              <div class="rc-title">${monthName} Report</div>
+              <div class="rc-desc">${txCount} transactions · Income ${fmt(mInc)} · Expenses ${fmt(mExp)} · Score ${Math.round(mScore.score)}/100 (Grade ${grade})</div>
+              <div class="rc-footer">
+                <span class="rc-date">${MN[m]} ${y}</span>
+                <span class="rc-badge ${i === 0 ? 'new' : 'ready'}">${i === 0 ? 'LATEST' : 'READY'}</span>
+              </div>
+            </div>`;
+        });
+
+        // Add overall summary card
+        const grade = overall.score >= 80 ? 'A' : overall.score >= 60 ? 'B' : overall.score >= 40 ? 'C' : 'D';
+        cardHtml += `
+          <div class="report-card">
+            <div class="rc-icon">🏆</div>
+            <div class="rc-title">Overall Summary</div>
+            <div class="rc-desc">${numMonths} months tracked · Total Income ${fmt(overall.inc)} · Total Expenses ${fmt(overall.exp)} · Net Savings ${fmt(overall.inc - overall.exp)} · Score ${Math.round(overall.score)} (Grade ${grade})</div>
+            <div class="rc-footer">
+              <span class="rc-date">${MN[new Date(sortedKeys[0].replace('-', '/') + '/01').getMonth()]} ${sortedKeys[0].split('-')[0]} – ${MN[new Date(sortedKeys[sortedKeys.length - 1].replace('-', '/') + '/01').getMonth()]} ${sortedKeys[sortedKeys.length - 1].split('-')[0]}</span>
+              <span class="rc-badge new">LIVE</span>
+            </div>
+          </div>`;
+
+        document.getElementById('report-cards').innerHTML = cardHtml;
+
+        // ── FINANCIAL SNAPSHOT TABLE ──
+        const topCat = Object.entries(overall.catSpend).sort((a, b) => b[1] - a[1])[0];
+        document.getElementById('snapshot-body').innerHTML = `
+          <tr><td>Total Income</td><td style="font-family:'DM Mono',monospace;color:var(--success)">${fmt(overall.inc)}</td></tr>
+          <tr><td>Total Expenses</td><td style="font-family:'DM Mono',monospace;color:var(--error)">${fmt(overall.exp)}</td></tr>
+          <tr><td>Net Savings</td><td style="font-family:'DM Mono',monospace;color:${overall.inc - overall.exp >= 0 ? 'var(--success)' : 'var(--error)'}">${fmt(overall.inc - overall.exp)}</td></tr>
+          <tr><td>Savings Rate</td><td style="font-family:'DM Mono',monospace">${overall.saveRatio.toFixed(1)}%</td></tr>
+          <tr><td>Discretionary %</td><td style="font-family:'DM Mono',monospace">${overall.discRatio.toFixed(1)}%</td></tr>
+          <tr><td>Top Category</td><td style="font-family:'DM Mono',monospace">${topCat ? topCat[0] + ' (' + fmt(topCat[1]) + ')' : '—'}</td></tr>
+          <tr><td>Discipline Score</td><td style="font-family:'DM Mono',monospace;font-weight:600;color:var(--gold)">${Math.round(overall.score)}/100</td></tr>`;
+
+        // ── LOAN ASSESSMENT HISTORY (from DB) ──
+        try {
+          const lres = await fetch('http://localhost:5001/api/loans');
+          if (lres.ok) {
+            const loans = await lres.json();
+            document.getElementById('loan-assess-counter').textContent = loans.length;
+
+            if (loans.length === 0) {
+              document.getElementById('loan-body').innerHTML = `<tr><td colspan="4" style="text-align:center;font-size:12px;color:gray;padding:12px">No previous loan assessments found. Run a simulation to save one.</td></tr>`;
+            } else {
+              document.getElementById('loan-body').innerHTML = loans.slice(0, 5).map(l => {
+                const d = new Date(l.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                const amt = '₹' + l.amount.toLocaleString('en-IN');
+                const rt = l.rate.toFixed(1) + '%';
+                const isOK = l.verdict === 'Eligible';
+                return `
+                  <tr>
+                    <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-secondary)">${d}</td>
+                    <td style="font-family:'DM Mono',monospace">${amt}</td>
+                    <td style="font-family:'DM Mono',monospace">${rt}</td>
+                    <td><span class="status-chip ${isOK ? 'chip-green' : 'chip-amber'}">${l.verdict}</span></td>
+                  </tr>`;
+              }).join('');
+            }
+          }
+        } catch (le) { console.warn('Could not fetch loans', le); }
+
+        // ── AUDIT TRAIL ──
+        let auditHtml = `
+          <div class="audit-item">
+            <div class="audit-dot" style="background:rgba(45,212,160,0.15)">✅</div>
+            <div class="audit-content">
+              <div class="audit-action">Platform Initialized</div>
+              <div class="audit-detail">${items.length} transactions loaded from database · ${numMonths} months of data · Score ${Math.round(overall.score)}/100.</div>
+              <div class="audit-time">Session Start</div>
+            </div>
+          </div>`;
+
+        items.slice(0, 15).forEach(t => {
+          const isInc = t.type === 'income';
+          const color = isInc ? 'rgba(45,212,160,0.15)' : 'rgba(201,168,76,0.15)';
+          const ico = isInc ? '💰' : '📝';
+          auditHtml += `
+            <div class="audit-item">
+              <div class="audit-dot" style="background:${color}">${ico}</div>
+              <div class="audit-content">
+                <div class="audit-action">${isInc ? 'Income Accredited' : 'Transaction Logged'}</div>
+                <div class="audit-detail">${t.desc} — ${t.cat} — ${fmt(t.amount)}.</div>
+                <div class="audit-time">${new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+              </div>
+            </div>`;
+        });
+
+        document.getElementById('audit-list').innerHTML = auditHtml;
+
+      } catch (err) {
+        console.error('Reports load error:', err);
+      }
+    }
+    loadReports();
+    setInterval(loadReports, 15000); // auto-refresh every 15s
+  </script>
+</body>
+
+</html>

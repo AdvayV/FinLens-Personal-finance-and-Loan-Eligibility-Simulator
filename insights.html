@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinLens — Smart Insights</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --gold: #c9a84c;
+            --gold-light: #e8c97e;
+            --gold-dim: rgba(201, 168, 76, 0.12);
+            --slate: #fff;
+            --slate-mid: #f9fafb;
+            --slate-light: #e5e7eb;
+            --success: #16a34a;
+            --warn: #ea580c;
+            --error: #dc2626;
+            --info: #2563eb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border: rgba(15, 23, 42, 0.08);
+            --border-gold: rgba(201, 168, 76, 0.35);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%), radial-gradient(circle at 90% 85%, #d1fae5 0%, transparent 45%), radial-gradient(circle at 60% 40%, #e0f2fe 0%, transparent 35%), #f3f4f6;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* NAV */
+        .floating-nav {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000
+        }
+
+        .floating-nav a {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+            transition: all .22s
+        }
+
+        .floating-nav a:hover,
+        .floating-nav a.active {
+            background: linear-gradient(135deg, #eef2ff, #fff);
+            border-color: var(--border-gold);
+            color: var(--gold);
+            transform: translateX(-5px);
+            box-shadow: 0 10px 28px rgba(99, 102, 241, 0.18)
+        }
+
+        .floating-nav a svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
+            opacity: .5
+        }
+
+        .floating-nav a:hover svg,
+        .floating-nav a.active svg {
+            opacity: 1
+        }
+
+        .app {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 36px 90px 60px 36px
+        }
+
+        header {
+            margin-bottom: 28px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            margin-bottom: 10px
+        }
+
+        .logo-mark {
+            width: 36px;
+            height: 36px;
+            border: 1.5px solid var(--gold);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            color: var(--gold);
+            font-weight: 600
+        }
+
+        .logo-name {
+            font-size: 16px;
+            font-weight: 600
+        }
+
+        header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 300;
+            line-height: 1.2
+        }
+
+        header h1 em {
+            font-style: italic;
+            color: var(--gold-light)
+        }
+
+        header p {
+            margin-top: 5px;
+            font-size: 13px;
+            color: var(--text-secondary)
+        }
+
+        .panel {
+            background: var(--slate);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, .07);
+            position: relative;
+            overflow: hidden;
+            transition: border-color .25s, box-shadow .25s, transform .25s
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--pg, rgba(201, 168, 76, .05)) 0%, transparent 70%);
+            pointer-events: none
+        }
+
+        .panel:hover {
+            border-color: rgba(201, 168, 76, .16);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .1);
+            transform: translateY(-2px)
+        }
+
+        .panel-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 19px;
+            font-weight: 400
+        }
+
+        .panel-title em {
+            font-style: italic;
+            color: var(--gold-light)
+        }
+
+        .panel-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            margin-top: 2px
+        }
+
+        .eyebrow {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 10px
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px
+        }
+
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px
+        }
+
+        /* CHART CANVAS */
+        canvas {
+            width: 100% !important;
+            max-height: 220px
+        }
+
+        /* SLIDERS */
+        .sim-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px
+        }
+
+        .sim-label {
+            min-width: 130px;
+            font-size: 12px;
+            font-weight: 500
+        }
+
+        .sim-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 5px;
+            background: var(--slate-light);
+            border-radius: 3px;
+            outline: none
+        }
+
+        .sim-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            cursor: pointer
+        }
+
+        .sim-val {
+            min-width: 50px;
+            text-align: right;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            color: var(--gold);
+            font-weight: 600
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 18px
+        }
+
+        .impact-card {
+            background: var(--slate-mid);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center
+        }
+
+        .impact-label {
+            font-size: 9px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 5px
+        }
+
+        .impact-val {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 600
+        }
+
+        /* DOW BAR */
+        .dow-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            height: 130px;
+            padding-top: 8px
+        }
+
+        .dow-bar-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px
+        }
+
+        .dow-bar {
+            width: 100%;
+            border-radius: 6px 6px 0 0;
+            transition: height .8s ease;
+            min-height: 3px
+        }
+
+        .dow-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace
+        }
+
+        .dow-amount {
+            font-size: 9px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace
+        }
+
+        /* RECURRING LIST */
+        .rec-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .rec-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--slate-mid);
+            border-radius: 11px;
+            font-size: 12px
+        }
+
+        .rec-icon {
+            font-size: 16px;
+            flex-shrink: 0
+        }
+
+        .rec-name {
+            flex: 1;
+            font-weight: 500
+        }
+
+        .rec-freq {
+            font-family: 'DM Mono', monospace;
+            font-size: 10px;
+            color: var(--text-secondary)
+        }
+
+        .rec-cost {
+            font-family: 'DM Mono', monospace;
+            font-weight: 600;
+            color: var(--error)
+        }
+
+        /* GOAL */
+        .goal-input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+            align-items: flex-end
+        }
+
+        .goal-field label {
+            display: block;
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 5px
+        }
+
+        .goal-field input {
+            padding: 10px 14px;
+            background: var(--slate-mid);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            outline: none;
+            width: 100%
+        }
+
+        .goal-field input:focus {
+            border-color: var(--gold)
+        }
+
+        .goal-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap
+        }
+
+        .goal-progress-bg {
+            height: 14px;
+            background: var(--slate-light);
+            border-radius: 7px;
+            overflow: hidden;
+            margin-bottom: 10px
+        }
+
+        .goal-progress-fill {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 1s ease
+        }
+
+        .goal-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px
+        }
+
+        .goal-stat {
+            background: var(--slate-mid);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center
+        }
+
+        .goal-stat-label {
+            font-size: 9px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            text-transform: uppercase;
+            margin-bottom: 4px
+        }
+
+        .goal-stat-val {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 600
+        }
+
+        /* IMPULSE */
+        .impulse-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 320px;
+            overflow-y: auto
+        }
+
+        .impulse-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--slate-mid);
+            border-radius: 11px;
+            border-left: 3px solid var(--error)
+        }
+
+        .impulse-item.medium {
+            border-color: var(--warn)
+        }
+
+        .imp-icon {
+            font-size: 16px;
+            flex-shrink: 0
+        }
+
+        .imp-info {
+            flex: 1
+        }
+
+        .imp-desc {
+            font-size: 12px;
+            font-weight: 500
+        }
+
+        .imp-detail {
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-family: 'DM Mono', monospace;
+            margin-top: 2px
+        }
+
+        .imp-amount {
+            font-family: 'DM Mono', monospace;
+            font-weight: 600;
+            color: var(--error);
+            font-size: 13px
+        }
+
+        .imp-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-family: 'DM Mono', monospace;
+            margin-left: 8px
+        }
+
+        /* INFLATION LINE CHART */
+        .inflation-chart {
+            position: relative;
+            height: 200px;
+            margin-top: 10px
+        }
+
+        .inflation-summary {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 10px;
+            line-height: 1.6
+        }
+
+        .inflation-summary strong {
+            color: var(--text-primary)
+        }
+
+        .orb {
+            position: fixed;
+            pointer-events: none;
+            z-index: -1;
+            border-radius: 50%;
+            filter: blur(60px)
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+            background: radial-gradient(circle, rgba(201, 168, 76, .06) 0%, transparent 70%)
+        }
+
+        .orb-2 {
+            width: 340px;
+            height: 340px;
+            bottom: 0;
+            right: 60px;
+            background: radial-gradient(circle, rgba(45, 212, 160, .05) 0%, transparent 70%)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <nav class="floating-nav">
+        <a href="dashboard.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>Dashboard</a>
+        <a href="transactions.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>Transactions</a>
+        <a href="behaviour.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>Behaviour</a>
+        <a href="influence.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="4" r="2" />
+                <circle cx="12" cy="20" r="2" />
+                <circle cx="4" cy="12" r="2" />
+                <circle cx="20" cy="12" r="2" />
+                <path d="M12 6v4m0 4v4M6 12h4m4 0h4" />
+            </svg>Influence Map</a>
+        <a href="insights.html" class="active"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="2">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>Insights</a>
+        <a href="advisor.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>AI Advisor</a>
+        <a href="loan.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>Loan Sim</a>
+        <a href="reports.html"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path
+                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>Reports</a>
+    </nav>
+
+    <div class="app">
+        <header>
+            <div>
+                <div class="logo">
+                    <div class="logo-mark">F</div><span class="logo-name">FinLens</span>
+                </div>
+                <h1>Smart <em>Insights</em></h1>
+                <p id="header-sub">Advanced analytics — loading data…</p>
+            </div>
+        </header>
+
+        <!-- 1. LIFESTYLE INFLATION TRACKER -->
+        <div class="panel" style="--pg:rgba(248,113,113,0.05)">
+            <p class="eyebrow">Lifestyle Inflation Tracker</p>
+            <div class="panel-title">Income vs Expense <em>Growth</em></div>
+            <div class="panel-sub">Month-over-month trend — are expenses growing faster than income?</div>
+            <canvas id="inflationChart" height="200" style="margin-top:16px"></canvas>
+            <div class="inflation-summary" id="inflation-summary"></div>
+        </div>
+
+        <!-- 2. WHAT-IF SIMULATOR + 3. DAY OF WEEK -->
+        <div class="two-col">
+            <div class="panel" style="--pg:rgba(96,165,250,0.05)">
+                <p class="eyebrow">What-If Simulator</p>
+                <div class="panel-title">Scenario <em>Playground</em></div>
+                <div class="panel-sub">Drag sliders to see instant financial impact</div>
+                <div style="margin-top:18px" id="sim-sliders"></div>
+                <div class="impact-grid" id="sim-impact">
+                    <div class="impact-card">
+                        <div class="impact-label">New Savings Rate</div>
+                        <div class="impact-val" id="sim-save">—</div>
+                    </div>
+                    <div class="impact-card">
+                        <div class="impact-label">New Score</div>
+                        <div class="impact-val" id="sim-score">—</div>
+                    </div>
+                    <div class="impact-card">
+                        <div class="impact-label">Annual Savings</div>
+                        <div class="impact-val" id="sim-annual">—</div>
+                    </div>
+                    <div class="impact-card">
+                        <div class="impact-label">Monthly Free Cash</div>
+                        <div class="impact-val" id="sim-free">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="--pg:rgba(45,212,160,0.05)">
+                <p class="eyebrow">Day-of-Week Profile</p>
+                <div class="panel-title">Spending by <em>Weekday</em></div>
+                <div class="panel-sub">Average daily spend — which days cost the most?</div>
+                <div class="dow-chart" id="dow-chart" style="margin-top:16px"></div>
+                <div style="margin-top:12px;font-size:11px;color:var(--text-secondary);font-family:'DM Mono',monospace"
+                    id="dow-insight"></div>
+            </div>
+        </div>
+
+        <!-- RECURRING EXPENSES + FINANCIAL GOAL -->
+        <div class="two-col">
+            <div class="panel" style="--pg:rgba(167,139,250,0.05)">
+                <p class="eyebrow">Recurring Expense Detector</p>
+                <div class="panel-title">Detected <em>Subscriptions</em></div>
+                <div class="panel-sub">Expenses found in 3+ distinct months</div>
+                <div class="rec-list" id="rec-list" style="margin-top:14px"></div>
+                <div style="margin-top:12px;font-size:12px;font-family:'DM Mono',monospace" id="rec-total"></div>
+            </div>
+
+            <div class="panel" style="--pg:rgba(201,168,76,0.05)">
+                <p class="eyebrow">Financial Goal Tracker</p>
+                <div class="panel-title">Savings <em>Goal</em></div>
+                <div class="panel-sub">Set a target and track your progress</div>
+                <div class="goal-input-row" style="margin-top:14px">
+                    <div class="goal-field" style="flex:1"><label>Target Amount (₹)</label><input type="number"
+                            id="goalAmount" value="500000" placeholder="500000"></div>
+                    <div class="goal-field" style="flex:1"><label>Months to Achieve</label><input type="number"
+                            id="goalMonths" value="12" placeholder="12"></div>
+                    <button class="goal-btn" onclick="calcGoal()">Track →</button>
+                </div>
+                <div class="goal-progress-bg">
+                    <div class="goal-progress-fill" id="goal-fill"
+                        style="width:0%;background:linear-gradient(90deg,var(--gold),var(--success))"></div>
+                </div>
+                <div id="goal-label"
+                    style="font-size:11px;color:var(--text-secondary);font-family:'DM Mono',monospace;margin-bottom:12px">
+                </div>
+                <div class="goal-stats" id="goal-stats">
+                    <div class="goal-stat">
+                        <div class="goal-stat-label">Required / Month</div>
+                        <div class="goal-stat-val" id="goal-req">—</div>
+                    </div>
+                    <div class="goal-stat">
+                        <div class="goal-stat-label">Actual / Month</div>
+                        <div class="goal-stat-val" id="goal-actual">—</div>
+                    </div>
+                    <div class="goal-stat">
+                        <div class="goal-stat-label">Projected Date</div>
+                        <div class="goal-stat-val" id="goal-date" style="font-size:14px">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. IMPULSE DETECTOR -->
+        <div class="panel" style="--pg:rgba(248,113,113,0.04)">
+            <p class="eyebrow">Impulse Spend Detector</p>
+            <div class="panel-title">Flagged <em>Impulse</em> Transactions</div>
+            <div class="panel-sub">Same-day repeats, above-average spikes, and weekend bursts</div>
+            <div style="display:flex;gap:14px;margin:14px 0">
+                <div class="impact-card" style="flex:1">
+                    <div class="impact-label">Impulse Transactions</div>
+                    <div class="impact-val" id="imp-count" style="color:var(--error)">—</div>
+                </div>
+                <div class="impact-card" style="flex:1">
+                    <div class="impact-label">Impulse Total</div>
+                    <div class="impact-val" id="imp-total" style="color:var(--error)">—</div>
+                </div>
+                <div class="impact-card" style="flex:1">
+                    <div class="impact-label">% of Expenses</div>
+                    <div class="impact-val" id="imp-pct" style="color:var(--warn)">—</div>
+                </div>
+                <div class="impact-card" style="flex:1">
+                    <div class="impact-label">Impulse Score</div>
+                    <div class="impact-val" id="imp-score">—</div>
+                </div>
+            </div>
+            <div class="impulse-list" id="impulse-list"></div>
+        </div>
+    </div>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script>
+        const API = 'http://localhost:5001/api/transactions';
+        const DISC_CATS = new Set(['Shopping', 'Travel', 'Entertainment', 'Food & Dining']);
+        const BUDGETS = { 'Food & Dining': 12000, 'Shopping': 8000, 'Travel': 10000, 'Utilities': 4000, 'Entertainment': 3000, 'Healthcare': 5000, 'Education': 6000, 'Other': 4000 };
+        const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+
+        let allTxs = [], globalInc = 0, globalExp = 0, globalMonths = 1, monthlySavings = 0;
+
+        // ─── SCORE (same as behaviour.html) ───────────────────────
+        function computeScore(inc, exp, discSpend, catSpend, numMonths) {
+            const saveRatio = inc > 0 ? ((inc - exp) / inc) * 100 : 0;
+            const discRatio = exp > 0 ? (discSpend / exp) * 100 : 0;
+            let score = 100;
+            Object.entries(catSpend).forEach(([cat, total]) => {
+                const b = BUDGETS[cat]; if (!b) return;
+                if ((total / numMonths) > b) score -= 8;
+            });
+            if (saveRatio < 0) score -= 25;
+            else if (saveRatio < 10) score -= 20;
+            else if (saveRatio < 20) score -= 10;
+            else if (saveRatio > 20 && saveRatio <= 30) score += 5;
+            else if (saveRatio > 30 && saveRatio <= 50) score += 10;
+            else if (saveRatio > 50) score += 15;
+            if (discRatio > 70) score -= 10;
+            else if (discRatio > 50) score -= 15;
+            return Math.min(Math.max(score, 0), 100);
+        }
+
+   
+        async function init() {
+            try {
+                const res = await fetch(API);
+                if (!res.ok) throw new Error();
+                allTxs = await res.json();
+            } catch { document.getElementById('header-sub').textContent = '⚠ Cannot reach backend on port 5001.'; return; }
+            if (!allTxs.length) { document.getElementById('header-sub').textContent = 'No transactions found.'; return; }
+
+            // Group by month
+            const byMonth = {};
+            const catSpend = {};
+            let inc = 0, exp = 0, disc = 0;
+            allTxs.forEach(tx => {
+                const d = new Date(tx.date); if (isNaN(d)) return;
+                const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+                (byMonth[key] = byMonth[key] || []).push(tx);
+                if (tx.type === 'income') inc += tx.amount;
+                else { exp += tx.amount; if (DISC_CATS.has(tx.cat)) disc += tx.amount; catSpend[tx.cat] = (catSpend[tx.cat] || 0) + tx.amount; }
+            });
+            const sortedKeys = Object.keys(byMonth).sort();
+            globalInc = inc; globalExp = exp;
+            globalMonths = sortedKeys.length;
+            monthlySavings = (inc - exp) / globalMonths;
+
+            document.getElementById('header-sub').textContent = `${allTxs.length} transactions · ${globalMonths} months · Advanced analytics`;
+
+            buildInflationChart(byMonth, sortedKeys);
+            buildWhatIf(inc, exp, disc, catSpend);
+            buildDow();
+            buildRecurring();
+            calcGoal();
+            buildImpulse();
+        }
+
+        // ─── 1. LIFESTYLE INFLATION ───────────────────────────────
+        function buildInflationChart(byMonth, sortedKeys) {
+            const labels = [], incData = [], expData = [];
+            sortedKeys.forEach(key => {
+                const [y, m] = key.split('-').map(Number);
+                labels.push(MN[m] + " '" + String(y).slice(-2));
+                let mi = 0, me = 0;
+                byMonth[key].forEach(tx => { if (tx.type === 'income') mi += tx.amount; else me += tx.amount; });
+                incData.push(mi); expData.push(me);
+            });
+
+            // Calculate growth rates
+            const firstInc = incData.find(v => v > 0) || 1;
+            const lastInc = incData[incData.length - 1] || firstInc;
+            const firstExp = expData.find(v => v > 0) || 1;
+            const lastExp = expData[expData.length - 1] || firstExp;
+            const incGrowth = ((lastInc - firstInc) / firstInc * 100).toFixed(1);
+            const expGrowth = ((lastExp - firstExp) / firstExp * 100).toFixed(1);
+            const inflated = parseFloat(expGrowth) > parseFloat(incGrowth);
+
+            new Chart(document.getElementById('inflationChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        { label: 'Income', data: incData, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.08)', fill: true, tension: 0.35, pointRadius: 2 },
+                        { label: 'Expenses', data: expData, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.08)', fill: true, tension: 0.35, pointRadius: 2 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { font: { family: 'Outfit', size: 11 }, usePointStyle: true, pointStyle: 'circle' } } },
+                    scales: { y: { ticks: { callback: v => '₹' + (v / 1000).toFixed(0) + 'K', font: { family: 'DM Mono', size: 10 } }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { ticks: { font: { family: 'DM Mono', size: 9 }, maxRotation: 45 }, grid: { display: false } } }
+                }
+            });
+
+            document.getElementById('inflation-summary').innerHTML = `
+        Income growth: <strong style="color:var(--success)">${incGrowth > 0 ? '+' : ''}${incGrowth}%</strong> (${fmt(firstInc)} → ${fmt(lastInc)}) · 
+        Expense growth: <strong style="color:${inflated ? 'var(--error)' : 'var(--success)'}">${expGrowth > 0 ? '+' : ''}${expGrowth}%</strong> (${fmt(firstExp)} → ${fmt(lastExp)}).
+        ${inflated ? '<br>⚠️ <strong style="color:var(--error)">Lifestyle inflation detected</strong> — expenses are growing faster than income!' : '<br>✅ <strong style="color:var(--success)">No lifestyle inflation</strong> — expenses are under control relative to income.'}`;
+        }
+
+        // ─── 2. WHAT-IF SIMULATOR ─────────────────────────────────
+        function buildWhatIf(inc, exp, disc, catSpend) {
+            const cats = Object.entries(catSpend).filter(([c]) => BUDGETS[c]).sort((a, b) => b[1] - a[1]);
+            const container = document.getElementById('sim-sliders');
+            const sliderState = {};
+
+            cats.forEach(([cat, total]) => {
+                sliderState[cat] = 0;
+                container.innerHTML += `
+          <div class="sim-row">
+            <span class="sim-label">${cat}</span>
+            <input type="range" min="-50" max="50" value="0" data-cat="${cat}" oninput="updateSim(this)">
+            <span class="sim-val" id="sv-${cat.replace(/\W/g, '')}">0%</span>
+          </div>`;
+            });
+
+            window.simData = { inc, exp, disc, catSpend, cats, sliderState };
+            runSim();
+        }
+
+        window.updateSim = function (el) {
+            const cat = el.dataset.cat;
+            const val = parseInt(el.value);
+            window.simData.sliderState[cat] = val;
+            document.getElementById('sv-' + cat.replace(/\W/g, '')).textContent = (val > 0 ? '+' : '') + val + '%';
+            runSim();
+        };
+
+        function runSim() {
+            const { inc, catSpend, sliderState } = window.simData;
+            let newExp = 0, newDisc = 0;
+            const newCatSpend = {};
+            Object.entries(catSpend).forEach(([cat, total]) => {
+                const adj = total * (1 + (sliderState[cat] || 0) / 100);
+                newCatSpend[cat] = adj;
+                newExp += adj;
+                if (DISC_CATS.has(cat)) newDisc += adj;
+            });
+
+            const saveRate = inc > 0 ? ((inc - newExp) / inc * 100) : 0;
+            const score = computeScore(inc, newExp, newDisc, newCatSpend, globalMonths);
+            const annualSavings = (inc - newExp) / globalMonths * 12;
+            const freeCash = (inc - newExp) / globalMonths;
+
+            const sr = document.getElementById('sim-save');
+            sr.textContent = saveRate.toFixed(1) + '%';
+            sr.style.color = saveRate >= 20 ? 'var(--success)' : saveRate >= 5 ? 'var(--warn)' : 'var(--error)';
+
+            const sc = document.getElementById('sim-score');
+            sc.textContent = Math.round(score);
+            sc.style.color = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warn)' : 'var(--error)';
+
+            document.getElementById('sim-annual').textContent = fmt(annualSavings);
+            document.getElementById('sim-annual').style.color = annualSavings >= 0 ? 'var(--success)' : 'var(--error)';
+
+            document.getElementById('sim-free').textContent = fmt(freeCash);
+            document.getElementById('sim-free').style.color = freeCash >= 0 ? 'var(--gold)' : 'var(--error)';
+        }
+
+        // ─── 3. DAY-OF-WEEK PROFILE ───────────────────────────────
+        function buildDow() {
+            const dowTotals = [0, 0, 0, 0, 0, 0, 0];
+            const dowCounts = [0, 0, 0, 0, 0, 0, 0];
+            allTxs.forEach(tx => {
+                if (tx.type === 'income') return;
+                const d = new Date(tx.date); if (isNaN(d)) return;
+                const day = d.getDay();
+                dowTotals[day] += tx.amount;
+                dowCounts[day]++;
+            });
+
+            const dowAvg = dowTotals.map((t, i) => dowCounts[i] > 0 ? t / dowCounts[i] : 0);
+            const maxAvg = Math.max(...dowAvg);
+            const overallAvg = dowAvg.reduce((s, v) => s + v, 0) / 7;
+
+            const container = document.getElementById('dow-chart');
+            const colors = ['#f87171', '#60a5fa', '#60a5fa', '#60a5fa', '#60a5fa', '#fb923c', '#f87171'];
+
+            container.innerHTML = dowAvg.map((avg, i) => {
+                const pct = maxAvg > 0 ? (avg / maxAvg) * 110 : 3;
+                const isHigh = avg > overallAvg * 1.15;
+                const barColor = isHigh ? 'linear-gradient(180deg,var(--error),rgba(220,38,38,0.3))' : 'linear-gradient(180deg,var(--gold),rgba(201,168,76,0.3))';
+                return `<div class="dow-bar-wrap">
+          <div class="dow-amount">${fmt(avg)}</div>
+          <div class="dow-bar" style="height:${Math.max(pct, 3)}px;background:${barColor}"></div>
+          <div class="dow-label">${DOW_NAMES[i]}</div>
+        </div>`;
+            }).join('');
+
+            const peakDay = DOW_NAMES[dowAvg.indexOf(maxAvg)];
+            const lowDay = DOW_NAMES[dowAvg.indexOf(Math.min(...dowAvg))];
+            document.getElementById('dow-insight').textContent = `Peak: ${peakDay} (avg ${fmt(maxAvg)}) · Lowest: ${lowDay} (avg ${fmt(Math.min(...dowAvg))}) · Weekend spend ${((dowAvg[0] + dowAvg[6]) / (dowAvg[1] + dowAvg[2] + dowAvg[3] + dowAvg[4] + dowAvg[5]) * 5 / 2 * 100).toFixed(0)}% of weekday avg`;
+        }
+
+        // ─── 4. RECURRING EXPENSE DETECTOR ────────────────────────
+        function buildRecurring() {
+            const descMonths = {};
+            allTxs.forEach(tx => {
+                if (tx.type === 'income') return;
+                const d = new Date(tx.date); if (isNaN(d)) return;
+                const mKey = `${d.getFullYear()}-${d.getMonth()}`;
+                const desc = tx.desc.trim();
+                if (!descMonths[desc]) descMonths[desc] = { months: new Set(), total: 0, count: 0, cat: tx.cat };
+                descMonths[desc].months.add(mKey);
+                descMonths[desc].total += tx.amount;
+                descMonths[desc].count++;
+            });
+
+            const recurring = Object.entries(descMonths)
+                .filter(([, v]) => v.months.size >= 3)
+                .map(([desc, v]) => ({ desc, monthCount: v.months.size, avgCost: v.total / v.months.size, totalCost: v.total, count: v.count, cat: v.cat }))
+                .sort((a, b) => b.totalCost - a.totalCost);
+
+            const emojiMap = { 'Food & Dining': '🍽️', 'Shopping': '🛍️', 'Travel': '✈️', 'Utilities': '⚡', 'Entertainment': '🎬', 'Healthcare': '🏥', 'Education': '📚', 'Other': '📦' };
+
+            document.getElementById('rec-list').innerHTML = recurring.length === 0
+                ? '<p style="font-size:12px;color:var(--text-secondary)">No recurring expenses detected (3+ months).</p>'
+                : recurring.slice(0, 12).map(r => `
+          <div class="rec-item">
+            <span class="rec-icon">${emojiMap[r.cat] || '💳'}</span>
+            <span class="rec-name">${r.desc}</span>
+            <span class="rec-freq">${r.monthCount} months · ${r.count}×</span>
+            <span class="rec-cost">${fmt(r.avgCost)}/mo</span>
+          </div>`).join('');
+
+            const totalRecurring = recurring.reduce((s, r) => s + r.avgCost, 0);
+            document.getElementById('rec-total').innerHTML = `Total recurring: <strong style="color:var(--error)">${fmt(totalRecurring)}/mo</strong> across <strong>${recurring.length}</strong> detected subscriptions/habits`;
+        }
+
+        // ─── 5. FINANCIAL GOAL ────────────────────────────────────
+        window.calcGoal = function () {
+            const target = parseFloat(document.getElementById('goalAmount').value) || 500000;
+            const months = parseInt(document.getElementById('goalMonths').value) || 12;
+            const requiredPerMonth = target / months;
+            const actualPerMonth = monthlySavings;
+            const pct = Math.min(Math.max((actualPerMonth / requiredPerMonth) * 100, 0), 100);
+            const projectedMonths = actualPerMonth > 0 ? Math.ceil(target / actualPerMonth) : Infinity;
+
+            const now = new Date();
+            const projDate = new Date(now);
+            projDate.setMonth(projDate.getMonth() + (projectedMonths === Infinity ? 0 : projectedMonths));
+            const onTrack = actualPerMonth >= requiredPerMonth;
+
+            document.getElementById('goal-fill').style.width = pct + '%';
+            document.getElementById('goal-fill').style.background = onTrack ? 'linear-gradient(90deg,var(--gold),var(--success))' : 'linear-gradient(90deg,var(--warn),var(--error))';
+            document.getElementById('goal-label').innerHTML = `${pct.toFixed(0)}% of required rate — <strong style="color:${onTrack ? 'var(--success)' : 'var(--error)'}">${onTrack ? '✅ On Track' : '⚠️ Behind Target'}</strong>`;
+            document.getElementById('goal-req').textContent = fmt(requiredPerMonth);
+            document.getElementById('goal-req').style.color = 'var(--info)';
+            document.getElementById('goal-actual').textContent = fmt(actualPerMonth);
+            document.getElementById('goal-actual').style.color = actualPerMonth >= requiredPerMonth ? 'var(--success)' : 'var(--error)';
+            document.getElementById('goal-date').textContent = projectedMonths === Infinity ? 'Never' : MN[projDate.getMonth()] + ' ' + projDate.getFullYear();
+            document.getElementById('goal-date').style.color = onTrack ? 'var(--success)' : 'var(--warn)';
+        };
+
+        // ─── 6. IMPULSE SPEND DETECTOR ────────────────────────────
+        function buildImpulse() {
+            const expenses = allTxs.filter(t => t.type !== 'income');
+            const totalExp = expenses.reduce((s, t) => s + t.amount, 0);
+
+            // Calculate per-category averages
+            const catStats = {};
+            expenses.forEach(tx => {
+                if (!catStats[tx.cat]) catStats[tx.cat] = { total: 0, count: 0 };
+                catStats[tx.cat].total += tx.amount;
+                catStats[tx.cat].count++;
+            });
+            const catAvg = {};
+            Object.entries(catStats).forEach(([cat, s]) => { catAvg[cat] = s.total / s.count; });
+
+            // Group by date
+            const byDate = {};
+            expenses.forEach(tx => {
+                const d = new Date(tx.date); if (isNaN(d)) return;
+                const dk = d.toISOString().split('T')[0];
+                (byDate[dk] = byDate[dk] || []).push(tx);
+            });
+
+            const impulses = [];
+
+            expenses.forEach(tx => {
+                const d = new Date(tx.date); if (isNaN(d)) return;
+                const dk = d.toISOString().split('T')[0];
+                const reasons = [];
+                let severity = 0;
+
+                // Rule 1: Above 2× category average
+                if (tx.amount > catAvg[tx.cat] * 2) {
+                    reasons.push(`${(tx.amount / catAvg[tx.cat]).toFixed(1)}× category avg`);
+                    severity += 2;
+                }
+
+                // Rule 2: Multiple same-category transactions on same day
+                const sameDaySameCat = byDate[dk].filter(t => t.cat === tx.cat);
+                if (sameDaySameCat.length >= 2 && sameDaySameCat[0] === tx) { // only flag once
+                    reasons.push(`${sameDaySameCat.length} same-category txns on one day`);
+                    severity += 1;
+                }
+
+                // Rule 3: Weekend + discretionary
+                const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                if (isWeekend && DISC_CATS.has(tx.cat) && tx.amount > catAvg[tx.cat] * 1.3) {
+                    reasons.push('Weekend discretionary spike');
+                    severity += 1;
+                }
+
+                if (reasons.length > 0) {
+                    impulses.push({ ...tx, reasons, severity, date: d });
+                }
+            });
+
+            // Sort by severity then amount
+            impulses.sort((a, b) => b.severity - a.severity || b.amount - a.amount);
+
+            const impTotal = impulses.reduce((s, t) => s + t.amount, 0);
+            const impPct = totalExp > 0 ? (impTotal / totalExp * 100) : 0;
+            const impScore = Math.max(0, 100 - Math.round(impPct * 2));
+
+            document.getElementById('imp-count').textContent = impulses.length;
+            document.getElementById('imp-total').textContent = fmt(impTotal);
+            document.getElementById('imp-pct').textContent = impPct.toFixed(1) + '%';
+            const impScoreEl = document.getElementById('imp-score');
+            impScoreEl.textContent = impScore + '/100';
+            impScoreEl.style.color = impScore >= 70 ? 'var(--success)' : impScore >= 40 ? 'var(--warn)' : 'var(--error)';
+
+            document.getElementById('impulse-list').innerHTML = impulses.slice(0, 25).map(imp => {
+                const sev = imp.severity >= 3 ? 'high' : 'medium';
+                return `<div class="impulse-item ${sev === 'medium' ? 'medium' : ''}">
+          <span class="imp-icon">${sev === 'high' ? '🔴' : '🟡'}</span>
+          <div class="imp-info">
+            <div class="imp-desc">${imp.desc} <span class="imp-badge" style="background:${sev === 'high' ? 'rgba(220,38,38,0.1);color:var(--error)' : 'rgba(234,88,12,0.1);color:var(--warn)'}">${imp.reasons[0]}</span></div>
+            <div class="imp-detail">${imp.cat} · ${imp.date.toLocaleDateString('en-IN')} · ${imp.reasons.slice(1).join(' · ')}</div>
+          </div>
+          <span class="imp-amount">${fmt(imp.amount)}</span>
+        </div>`;
+            }).join('') || '<p style="font-size:12px;color:var(--text-secondary)">No impulse transactions detected.</p>';
+        }
+
+        init();
+        setInterval(init, 15000);
+    </script>
+</body>
+
+</html>
