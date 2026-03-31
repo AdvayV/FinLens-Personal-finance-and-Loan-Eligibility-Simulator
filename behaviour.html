@@ -34,6 +34,10 @@
       padding: 0;
     }
 
+    html {
+      font-size: 16px;
+    }
+
     body {
       background:
         radial-gradient(circle at 10% 10%, #dde9ff 0%, transparent 45%),
@@ -42,6 +46,8 @@
         #f3f4f6;
       color: var(--text-primary);
       font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
       min-height: 100vh;
     }
 
@@ -97,9 +103,9 @@
 
     /* LAYOUT */
     .app {
-      max-width: 1060px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 36px 90px 60px 36px;
+      padding: 36px 80px 60px 36px;
     }
 
     header {
@@ -275,6 +281,10 @@
     .score-big-svg {
       width: 150px;
       height: 150px;
+    }
+
+    .score-big-svg circle#score-ring {
+      transition: stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .score-big-center {
@@ -785,13 +795,15 @@
         </div>
         <div class="score-big-wrap">
           <svg class="score-big-svg" viewBox="0 0 36 36">
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e5e7eb" stroke-width="3" />
-            <circle id="score-ring" cx="18" cy="18" r="15.9" fill="none" stroke="url(#scoreGrad)" stroke-width="3"
-              stroke-dasharray="0 100" stroke-dashoffset="25" transform="rotate(-90 18 18)" stroke-linecap="round" />
+            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="3" />
+            <circle id="score-ring" cx="18" cy="18" r="15.9155" fill="none" stroke="url(#scoreGrad)" stroke-width="3"
+              stroke-dasharray="0 100" stroke-dashoffset="0" transform="rotate(-90 18 18)" stroke-linecap="round" 
+              style="transition: stroke-dasharray 1s ease-out;" />
             <defs>
-              <linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="0">
+              <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stop-color="#c9a84c" />
-                <stop offset="100%" stop-color="#fb923c" />
+                <stop offset="50%" stop-color="#fb923c" />
+                <stop offset="100%" stop-color="#c9a84c" />
               </linearGradient>
             </defs>
           </svg>
@@ -1075,7 +1087,15 @@
       gradeBadge.style.color = gradeText;
       gradeBadge.style.border = `1px solid ${gradeText}`;
 
-      document.getElementById('score-ring').setAttribute('stroke-dasharray', `${(score / 100) * 100} 100`);
+      // Animate the score ring with accurate calculation
+      const scoreRing = document.getElementById('score-ring');
+      const circumference = 2 * Math.PI * 15.9155; // ~100
+      const scorePercent = (score / 100) * circumference;
+      
+      // Trigger animation after a short delay
+      setTimeout(() => {
+        scoreRing.setAttribute('stroke-dasharray', `${scorePercent} ${circumference}`);
+      }, 100);
 
       document.getElementById('score-comment').innerHTML =
         `Computed from <strong>${numMonths} months</strong> of data using monthly averages. Savings rate <strong>${saveRatio.toFixed(1)}%</strong>, discretionary spend <strong>${discRatio.toFixed(1)}%</strong>. Score: <strong style="color:var(--gold)">${rounded}/100</strong> — <strong style="color:${gradeText}">${comment}</strong>`;
